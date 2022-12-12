@@ -6,11 +6,15 @@
 
 body {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     min-height: 100vh;
-    background: #5256ad;
     color: #7f8c8d;
+}
+
+body>div {
+    padding: 2vh 0;
 }
 
 h1,
@@ -62,11 +66,13 @@ a.pure-button-primary {
 .home-menu {
     padding: 0.5em;
     text-align: center;
-    box-shadow: 0 1px 1px rgba(0,0,0, 0.10);
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.10);
 }
+
 .home-menu {
     background: #2d3e50;
 }
+
 .pure-menu.pure-menu-fixed {
     /* Fixed menus normally have a border at the bottom. */
     border-bottom: none;
@@ -87,19 +93,12 @@ a.pure-button-primary {
 .home-menu a {
     color: #6FBEF3;
 }
+
 .home-menu li a:hover,
 .home-menu li a:focus {
     background: none;
     border: none;
     color: #AECFE5;
-}
-
-/* This is the class used for the footer */
-.footer {
-    background: #111;
-    position: fixed;
-    bottom: 0;
-    width: 100%;
 }
 
 /*
@@ -117,48 +116,67 @@ a.pure-button-primary {
     }
 }
 
-.drag-area{
-  border: 2px dashed #fff;
-  height: 500px;
-  width: 700px;
-  border-radius: 5px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
+.upload {
+    width: 100vw;
+    background: #5256ad;
 }
-.drag-area.active{
-  border: 2px solid #fff;
+
+.drag-area {
+    border: 2px dashed #fff;
+    height: 500px;
+    width: 700px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    margin: auto;
 }
-.drag-area .icon{
-  font-size: 100px;
-  color: #fff;
+
+.drag-area.active {
+    border: 2px solid #fff;
 }
-.drag-area header{
-  font-size: 30px;
-  font-weight: 500;
-  color: #fff;
+
+.drag-area .icon {
+    font-size: 100px;
+    color: #fff;
 }
-.drag-area span{
-  font-size: 25px;
-  font-weight: 500;
-  color: #fff;
-  margin: 10px 0 15px 0;
+
+.drag-area header {
+    font-size: 30px;
+    font-weight: 500;
+    color: #fff;
 }
-.drag-area button{
-  padding: 10px 25px;
-  font-size: 20px;
-  font-weight: 500;
-  border: none;
-  outline: none;
-  background: #fff;
-  color: #5256ad;
-  border-radius: 5px;
-  cursor: pointer;
+
+.drag-area span {
+    font-size: 25px;
+    font-weight: 500;
+    color: #fff;
+    margin: 10px 0 15px 0;
 }
-.drag-area img{
-  height: 100%;
-  width: 100%;
-  object-fit: cover;
-  border-radius: 5px;
+
+.drag-area button {
+    padding: 10px 25px;
+    font-size: 20px;
+    font-weight: 500;
+    border: none;
+    outline: none;
+    background: #fff;
+    color: #5256ad;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.drag-area img {
+    height: 100%;
+    width: 100%;
+    object-fit: cover;
+    border-radius: 5px;
+}
+
+.footer {
+    background: #111;
+    position: fixed;
+    bottom: 0;
+    width: 100vw;
 }

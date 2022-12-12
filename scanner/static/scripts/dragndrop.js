@@ -40,7 +40,7 @@ function handleFile(file) {
 
     fetch("http://localhost:5000/upload", requestOptions).then(
         (response) => {
-            console.log(response.data)
+            console.log(response)
         }
     )
 }

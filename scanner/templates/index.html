@@ -15,9 +15,8 @@
             <a class="pure-menu-heading" href="">File scanner</a>
 
             <ul class="pure-menu-list">
-                {% if not result %}
-                <li class="pure-menu-item"><a href="#upload" class="pure-menu-link">Upload</a></li>
-                {% else %}
+                <li class="pure-menu-item"><a href="/#upload" class="pure-menu-link">Upload</a></li>
+                {% if result %}
                 <li class="pure-menu-item"><a href="#results" class="pure-menu-link">Results</a></li>
                 {% endif %}
                 {% if last_results %}
@@ -57,7 +56,9 @@
         View the source of this layout to learn more. Made with love by the Pure Team.
     </div>
 
+    {% if not result %}
     <script src="{{ url_for('static',filename='scripts/dragndrop.js') }}"> </script>
+    {% endif %}
 </body>
 
 </html>

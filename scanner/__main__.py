@@ -18,7 +18,7 @@ def upload():
     f = flask.request.files.get("file")
     f.save("results/" + f.filename)
     # redirect to result page
-    return flask.redirect(flask.url_for("index"))
+    return flask.redirect(flask.url_for("result", id=f.filename))
 
 def main():
     app.jinja_env.auto_reload = True

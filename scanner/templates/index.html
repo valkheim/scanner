@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Scanner</title>
+        <link rel="stylesheet" href="{{ url_for('static',filename='styles/pure-min.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static',filename='styles/styles.css') }}">
+    </head>
+    <body>
+        <div class="header">
+            <div class="home-menu pure-menu pure-menu-horizontal pure-menu-fixed">
+                <a class="pure-menu-heading" href="">File scanner</a>
+
+                <!--
+                <ul class="pure-menu-list">
+                    <li class="pure-menu-item pure-menu-selected"><a href="#" class="pure-menu-link">Home</a></li>
+                    <li class="pure-menu-item"><a href="#" class="pure-menu-link">Tour</a></li>
+                    <li class="pure-menu-item"><a href="#" class="pure-menu-link">Sign Up</a></li>
+                </ul>
+                -->
+            </div>
+        </div>
+
+        <div class="drag-area">
+            <div class="icon"><i class="fas fa-cloud-upload-alt"></i></div>
+            <header>Drag & Drop to Upload File</header>
+            <span>OR</span>
+            <button>Browse File</button>
+            <input type="file" hidden>
+        </div>
+
+        <div class="footer l-box is-center">
+            View the source of this layout to learn more. Made with love by the Pure Team.
+        </div>
+
+        <script src="{{ url_for('static',filename='scripts/dragndrop.js') }}"> </script>
+    </body>
+</html>

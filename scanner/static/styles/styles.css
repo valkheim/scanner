@@ -2,37 +2,24 @@
     -webkit-box-sizing: border-box;
     -moz-box-sizing: border-box;
     box-sizing: border-box;
+
+    --black: #191A19;
+    --white: #ddd;
+    --green: #519872;
 }
 
-body {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    min-height: 100vh;
-    color: #7f8c8d;
+h1 {
+    font-size: 1.7rem;
 }
 
-body>div {
-    padding: 2vh 0;
+a {
+    color: var(--green);
+    text-decoration: none;
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-label {
-    color: #34495e;
-}
-
-.l-box {
-    padding: 1em;
-}
-
-.is-center {
-    text-align: center;
+a:hover,
+a:focus {
+    filter: brightness(0.6);
 }
 
 .pure-form label {
@@ -42,35 +29,22 @@ label {
 }
 
 .pure-form input[type] {
-    border: 2px solid #ddd;
+    border: 2px solid var(--white);
     box-shadow: none;
     font-size: 100%;
     width: 100%;
     margin-bottom: 1em;
 }
 
-.pure-button {
-    background-color: #1f8dd6;
-    color: white;
-    padding: 0.5em 2em;
-    border-radius: 5px;
-}
-
-a.pure-button-primary {
-    background: white;
-    color: #1f8dd6;
-    border-radius: 5px;
-    font-size: 120%;
-}
-
 .home-menu {
+    height: 6vh;
     padding: 0.5em;
     text-align: center;
     box-shadow: 0 1px 1px rgba(0, 0, 0, 0.10);
 }
 
 .home-menu {
-    background: #2d3e50;
+    background: var(--green);
 }
 
 .pure-menu.pure-menu-fixed {
@@ -81,31 +55,21 @@ a.pure-button-primary {
 }
 
 .home-menu .pure-menu-heading {
-    color: white;
-    font-weight: 400;
+    font-weight: bold;
     font-size: 120%;
 }
 
-.home-menu .pure-menu-selected a {
-    color: white;
-}
-
-.home-menu a {
-    color: #6FBEF3;
+.pure-menu-heading, .pure-menu-link {
+    color: var(--black);
 }
 
 .home-menu li a:hover,
 .home-menu li a:focus {
     background: none;
     border: none;
-    color: #AECFE5;
+    color: var(--white);
 }
 
-/*
- * -- TABLET (AND UP) MEDIA QUERIES --
- * On tablets and other medium-sized devices, we want to customize some
- * of the mobile styles.
- */
 @media (min-width: 48em) {
     .home-menu {
         text-align: left;
@@ -116,13 +80,38 @@ a.pure-button-primary {
     }
 }
 
-.upload {
+.header {
+    height: 6vh;
+    color: var(--white);
+}
+
+main {
+    display: flex;
+    height: 88vh; /* 100 - 6 - 6 */
+    flex-direction: column;
+    background: var(--black);
+    color: var(--white);
+}
+
+main > div {
+    flex: 1;
+    padding: 2vh 0;
+}
+
+.upload, .results {
+    display: flex;
+    flex-direction: column;
+    flex:1;
     width: 100vw;
-    background: #5256ad;
+    /*background: #5256ad;*/
+}
+
+.results, .last_results {
+    padding: 0 5vw;
 }
 
 .drag-area {
-    border: 2px dashed #fff;
+    border: 2px dashed var(--white);
     height: 500px;
     width: 700px;
     border-radius: 5px;
@@ -134,24 +123,22 @@ a.pure-button-primary {
 }
 
 .drag-area.active {
-    border: 2px solid #fff;
+    border: 2px solid var(--white);
 }
 
 .drag-area .icon {
     font-size: 100px;
-    color: #fff;
 }
 
 .drag-area header {
     font-size: 30px;
     font-weight: 500;
-    color: #fff;
+    color: var(--white);
 }
 
 .drag-area span {
     font-size: 25px;
     font-weight: 500;
-    color: #fff;
     margin: 10px 0 15px 0;
 }
 
@@ -161,8 +148,8 @@ a.pure-button-primary {
     font-weight: 500;
     border: none;
     outline: none;
-    background: #fff;
-    color: #5256ad;
+    background: var(--white);
+    color: var(--black);
     border-radius: 5px;
     cursor: pointer;
 }
@@ -174,9 +161,16 @@ a.pure-button-primary {
     border-radius: 5px;
 }
 
+.last_results table {
+    width: 100%;
+}
+
 .footer {
-    background: #111;
+    height: 6vh;
+    background: var(--black);
     position: fixed;
     bottom: 0;
     width: 100vw;
+    padding: 1em;
+    text-align: center;
 }

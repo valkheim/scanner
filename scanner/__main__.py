@@ -12,12 +12,18 @@ app = flask.Flask(__name__)
 app.secret_key = "super secret key"
 
 
-@app.route("/", methods=["GET"])
-def index():
-    last_results = []
+def get_results_dir():
     results_dir = os.path.normpath(
         os.path.join(os.path.dirname(__file__), "..", "results")
     )
+    os.makedirs(results_dir, exist_ok=True)
+    return results_dir
+
+
+@app.route("/", methods=["GET"])
+def index():
+    last_results = []
+    results_dir = get_results_dir()
     for result in os.listdir(results_dir):
         if (infos := read_result_infos(result)) is not None:
             last_results += [infos]
@@ -28,9 +34,8 @@ def index():
 
 @app.route("/r/<hash>", methods=["GET"])
 def result(hash):
-    dst_dir = os.path.normpath(
-        os.path.join(os.path.dirname(__file__), "..", "results", hash)
-    )
+    results_dir = get_results_dir()
+    dst_dir = os.path.join(results_dir, hash)
     results = {
         "infos": read_result_infos(hash),
         "extractors": get_extractors_data(dst_dir),

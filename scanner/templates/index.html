@@ -9,73 +9,87 @@
     <link rel="stylesheet" href="{{ url_for('static',filename='styles/styles.css') }}">
 </head>
 
-    <body>
-        <div class="header">
-            <div class="home-menu pure-menu pure-menu-horizontal pure-menu-fixed">
-                <a class="pure-menu-heading" href="/">File scanner</a>
-                <ul class="pure-menu-list">
-                    <li class="pure-menu-item"><a href="/#upload" class="pure-menu-link">Upload</a></li>
-                    {% if result %}
-                    <li class="pure-menu-item"><a href="#results" class="pure-menu-link">Results</a></li>
-                    {% endif %}
-                    {% if last_results %}
-                    <li class="pure-menu-item"><a href="#last_results" class="pure-menu-link">Last results</a></li>
-                    {% endif %}
-                </ul>
-            </div>
+<body>
+    <div class="header">
+        <div class="home-menu pure-menu pure-menu-horizontal pure-menu-fixed">
+            <a class="pure-menu-heading" href="/">File scanner</a>
+            <ul class="pure-menu-list">
+                <li class="pure-menu-item"><a href="/#upload" class="pure-menu-link">Upload</a></li>
+                {% if result %}
+                <li class="pure-menu-item"><a href="#results" class="pure-menu-link">Results</a></li>
+                {% endif %}
+                {% if last_results %}
+                <li class="pure-menu-item"><a href="#last_results" class="pure-menu-link">Last results</a></li>
+                {% endif %}
+            </ul>
         </div>
+    </div>
 
-        <main>
-            {% if not result %}
-            <div id="upload" class="upload">
-                <div class="drag-area">
-                    <div class="icon"><i class="fas fa-cloud-upload-alt"></i></div>
-                    <header>Drag & Drop to Upload File</header>
-                    <span>OR</span>
-                    <button>Browse File</button>
-                    <input type="file" hidden>
-                </div>
-            </div>
-            {% else %}
-            <div id="results" class="results">
-                <h1>Analysis results</h1>
-                {{ result }}
-            </div>
-            {% endif %}
-            
-            {% if last_results %}
-            <div id="last_results" class="last_results">
-                <h1>Last results</h1>
-                <table class="pure-table">
-                    <thead>
-                        <tr>
-                            <th>Filename</th>
-                            <th>Analyse</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for key, value in last_results.items() %}
-                        <tr>
-                            <th>{{ value }}</th>
-                            <th><a href="/r/{{ key }}">GO</a></th>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                </ul>
-            </div>
-            {% endif %}
-            
-        </main>
-
-        <div class="footer">
-            Present day. present time!
-        </div>
-        
+    <main>
         {% if not result %}
-        <script src="{{ url_for('static',filename='scripts/dragndrop.js') }}"> </script>
+        <div id="upload" class="upload">
+            <div class="drag-area">
+                <div class="icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                <header>Drag & Drop to Upload File</header>
+                <span>OR</span>
+                <button>Browse File</button>
+                <input type="file" hidden>
+            </div>
+        </div>
+        {% else %}
+        <div id="results" class="results">
+            <h1>Analysis results</h1>
+            <dl>
+                {% set outline = "line" %}
+                {% for key, value in result.items() recursive %}
+                <h2>{{ key }}</h2>
+                {% if value is string %}
+                <textarea readonly="readonly">{{ value }}</textarea>
+                {% elif value is mapping %}
+                {{ loop(value.items()) }}
+                {%endif%}
+                {% endfor %}
+            </dl>
+        </div>
         {% endif %}
 
-    </body>
+        {% if last_results %}
+        <div id="last_results" class="last_results">
+            <h1>Last results</h1>
+            <table class="pure-table">
+                <thead>
+                    <tr>
+                        <th>Last update</th>
+                        <th>SHA1</th>
+                        <th>Filename</th>
+                        <th>Analyse</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in last_results %}
+                    <tr>
+                        <th>{{ result.last_update }}</th>
+                        <th>{{ result.sha1 }}</th>
+                        <th>{{ result.filename }}</th>
+                        <th><a href="/r/{{ result.sha1 }}">GO</a></th>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            </ul>
+        </div>
+        {% endif %}
+
+    </main>
+
+    <div class="footer">
+        Present day. present time!
+    </div>
+
+    {% if not result %}
+    <script src="{{ url_for('static',filename='scripts/dragndrop.js') }}"> </script>
+    {% endif %}
+
+</body>
 
 </html>

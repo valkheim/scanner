@@ -12,14 +12,23 @@ h1 {
     font-size: 1.7rem;
 }
 
+h2 {
+    font-size: 1.2rem;
+}
+
 a {
     color: var(--green);
     text-decoration: none;
 }
 
-a:hover,
-a:focus {
+a:hover {
     filter: brightness(0.6);
+}
+
+textarea {
+    height: 5rem;
+    resize: vertical;
+    width: 100%;
 }
 
 .pure-form label {
@@ -59,15 +68,19 @@ a:focus {
     font-size: 120%;
 }
 
-.pure-menu-heading, .pure-menu-link {
+.pure-menu-heading,
+.pure-menu-link {
     color: var(--black);
+}
+
+.home-menu li a:hover {
+    color: var(--white);
 }
 
 .home-menu li a:hover,
 .home-menu li a:focus {
     background: none;
     border: none;
-    color: var(--white);
 }
 
 @media (min-width: 48em) {
@@ -87,21 +100,23 @@ a:focus {
 
 main {
     display: flex;
-    height: 88vh; /* 100 - 6 - 6 */
+    height: 88vh;
+    /* 100 - 6 - 6 */
     flex-direction: column;
     background: var(--black);
     color: var(--white);
 }
 
-main > div {
+main>div {
     flex: 1;
     padding: 2vh 5vw;
 }
 
-.upload, .results {
+.upload,
+.results {
     display: flex;
     flex-direction: column;
-    flex:1;
+    flex: 1;
     width: 100vw;
 }
 

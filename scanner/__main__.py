@@ -27,17 +27,23 @@ def index():
 @app.route("/r/<hash>", methods=["GET"])
 def result(hash):
     dst_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "results", hash))
-    #infos = read_result_infos(hash)
     results = {
-        #"rawdata": hexdump(readfile(os.path.join(dst_dir, infos["filename"]))),
+        "infos": read_result_infos(hash),
         "extractors": get_extractors_data(dst_dir)
     }
-    return flask.render_template("index.html", result=results)
+    return flask.render_template("index.html", results=results)
+
+@app.route("/a/<hash>")
+def analyse(hash):
+    infos = read_result_infos(hash)
+    dst_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "results", hash))
+    dst_file = os.path.join(dst_dir, infos["filename"])
+    run_extractors(dst_file)
+    return flask.redirect(flask.url_for("result", hash=hash))
 
 @app.route("/upload", methods=["POST"])
 def upload():
     f = flask.request.files.get("file")
-    # Copy file to results
     hash = hashlib.sha1(f.read()).hexdigest()
     f.seek(0)
     dst_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "results", hash))
@@ -46,18 +52,16 @@ def upload():
         os.mkdir(dst_dir)
         f.save(dst_file)
 
-    # Write analysis infos
     with open(os.path.join(dst_dir, "infos.json"), "wt") as fh:
-        infos = {
+        fh.write(json.dumps(
+            {
             "filename": f.filename,
             "sha1": hash,
             "last_update": datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        }
-        fh.write(json.dumps(infos))
+            }
+        ))
 
-    # Analyse file
-    run_extractors(dst_file)
-    return flask.redirect(flask.url_for("result", hash=hash))
+    return flask.redirect(flask.url_for("analyse", hash=hash))
 
 def main():
     app.jinja_env.auto_reload = True

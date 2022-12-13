@@ -19,6 +19,9 @@ def run_extractors(filepath: str) -> None:
     for extractor_relpath in yield_files(extractors_dir):
         extractor_abspath = os.path.join(extractors_dir, extractor_relpath)
         parts = extractor_relpath.split(os.sep)
+        if any([ x.startswith('_') for x in parts]):
+            continue
+
         results_absdir = os.path.join(os.path.dirname(filepath), *parts[:-1], ".".join(parts[-1].split('.')[:-1]))
         os.makedirs(results_absdir, exist_ok=True)
         with open(os.path.join(results_absdir, "stdout.log"), "wt") as stdout:

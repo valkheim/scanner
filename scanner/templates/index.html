@@ -1,9 +1,6 @@
 <!doctype html>
-<html lang="en">
 
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scanner</title>
     <link rel="stylesheet" href="{{ url_for('static',filename='styles/pure-min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static',filename='styles/styles.css') }}">
@@ -15,8 +12,10 @@
             <a class="pure-menu-heading" href="/">File scanner</a>
             <ul class="pure-menu-list">
                 <li class="pure-menu-item"><a href="/#upload" class="pure-menu-link">Upload</a></li>
-                {% if result %}
-                <li class="pure-menu-item"><a href="#results" class="pure-menu-link">Results</a></li>
+                {% if results %}
+                <li class="pure-menu-item"><a href="#infos" class="pure-menu-link">Infos</a></li>
+                <li class="pure-menu-item"><a href="#extractors" class="pure-menu-link">Extractors</a></li>
+                <li class="pure-menu-item"><a href="#actions" class="pure-menu-link">Actions</a></li>
                 {% endif %}
                 {% if last_results %}
                 <li class="pure-menu-item"><a href="#last_results" class="pure-menu-link">Last results</a></li>
@@ -26,27 +25,32 @@
     </div>
 
     <main>
-        {% if not result %}
-        <div id="upload" class="upload">
+        {% if not results %}
+        <a id="upload" class="anchor"></a>
+        <div class="upload">
             <div class="drag-area">
                 <div class="icon"><i class="fas fa-cloud-upload-alt"></i></div>
-                <header>Drag & Drop to Upload File</header>
+                <header>Drag & Drop to upload file</header>
                 <span>OR</span>
-                <button>Browse File</button>
+                <button>Browse file</button>
                 <input type="file" hidden>
             </div>
         </div>
         {% else %}
         <div id="results" class="results">
             <h1>Analysis results</h1>
-            <!--
-                <h2>File contents</h2>
-                <textarea readonly="readonly">{{ result.rawdata }}</textarea>
-            -->
+            <a id="infos" class="anchor"></a>
+            <h2>Infos</h2>
+            <ul>
+                <li>Filename: {{ results.infos.filename }}</li>
+                <li>Last update: {{ results.infos.last_update }}</li>
+                <li>Hash: <span id="infos-hash">{{ results.infos.sha1 }}</span></li>
+            </ul>
+            <a id="extractors" class="anchor"></a>
             <h2>Extractors</h2>
             <dl>
                 {% set outline = "line" %}
-                {% for key, value in result.extractors.items() recursive %}
+                {% for key, value in results.extractors.items() recursive %}
                 <h3>{{ key }}</h3>
                 {% if value is string %}
                 <textarea readonly="readonly">{{ value }}</textarea>
@@ -55,11 +59,18 @@
                 {%endif%}
                 {% endfor %}
             </dl>
+            <a id="actions" class="anchor"></a>
+            <h2>Actions</h2>
+            <div class="actions-area">
+                <button id="action-rerun" class="pure-button">Rerun analysis</button>
+                <button id="action-save" class="pure-button">Save results</button>
+            </div>
         </div>
         {% endif %}
 
         {% if last_results %}
-        <div id="last_results" class="last_results">
+        <div class="last_results">
+            <a id="last_results" class="anchor"></a>
             <h1>Last results</h1>
             <table class="pure-table">
                 <thead>
@@ -87,13 +98,14 @@
 
     </main>
 
-    <div class="footer">
-        Present day. present time!
-    </div>
+    <div class="footer"></div>
 
-    {% if not result %}
+    {% if not results %}
     <script src="{{ url_for('static',filename='scripts/dragndrop.js') }}"> </script>
+    {% else %}
+    <script src="{{ url_for('static',filename='scripts/actions.js') }}"> </script>
     {% endif %}
+    <script src="{{ url_for('static',filename='scripts/random.js') }}"> </script>
 
 </body>
 

@@ -5,7 +5,8 @@ import json
 import time
 import datetime
 
-from scanner.analyse import run_extractors, get_results
+from scanner.analyse import run_extractors, get_extractors_data
+from scanner.utils import read_result_infos, readfile, hexdump
 
 app = flask.Flask(__name__)
 app.secret_key = "super secret key"
@@ -17,15 +18,8 @@ def index():
     last_results = []
     results_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "results"))
     for result in os.listdir(results_dir):
-        infos_path = os.path.join(results_dir, result, "infos.json")
-        if not os.path.exists(infos_path):
-            continue
-
-        with open(infos_path, "rt") as fh:
-            infos = json.load(fh)
-        
-        print("infos=", infos)
-        last_results += [infos]
+        if (infos := read_result_infos(result)) is not None:
+            last_results += [infos]
 
     print(last_results)
     return flask.render_template("index.html", last_results=last_results)
@@ -33,7 +27,11 @@ def index():
 @app.route("/r/<hash>", methods=["GET"])
 def result(hash):
     dst_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "results", hash))
-    results = get_results(dst_dir)
+    #infos = read_result_infos(hash)
+    results = {
+        #"rawdata": hexdump(readfile(os.path.join(dst_dir, infos["filename"]))),
+        "extractors": get_extractors_data(dst_dir)
+    }
     return flask.render_template("index.html", result=results)
 
 @app.route("/upload", methods=["POST"])

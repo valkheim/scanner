@@ -25,7 +25,7 @@ def run_extractors(filepath: str) -> None:
             with open(os.path.join(results_absdir, "stderr.log"), "wt") as stderr:
                 run_process([extractor_abspath, filepath], stdout=stdout, stderr=stderr)
 
-def get_results(filedir: str) -> T.Dict[str, T.Any]:
+def get_extractors_data(filedir: str) -> T.Dict[str, T.Any]:
     files = [y for x in os.walk(filedir) for y in glob.glob(os.path.join(x[0], '*.log'))]
     ldirs = len(os.path.normpath(filedir).split(os.sep))
     results = {}

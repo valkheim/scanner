@@ -39,10 +39,15 @@
         {% else %}
         <div id="results" class="results">
             <h1>Analysis results</h1>
+            <!--
+                <h2>File contents</h2>
+                <textarea readonly="readonly">{{ result.rawdata }}</textarea>
+            -->
+            <h2>Extractors</h2>
             <dl>
                 {% set outline = "line" %}
-                {% for key, value in result.items() recursive %}
-                <h2>{{ key }}</h2>
+                {% for key, value in result.extractors.items() recursive %}
+                <h3>{{ key }}</h3>
                 {% if value is string %}
                 <textarea readonly="readonly">{{ value }}</textarea>
                 {% elif value is mapping %}

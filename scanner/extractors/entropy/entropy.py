@@ -1,0 +1,33 @@
+#!/usr/bin/env python3
+
+import math
+import sys
+from collections import Counter
+
+
+def eta(data: bytes, unit: str):
+    base = {"shannon": 2.0, "natural": math.exp(1), "hartley": 10.0}
+
+    if len(data) <= 1:
+        return 0
+
+    counts = Counter()
+
+    for d in data:
+        counts[d] += 1
+
+    ent = 0.0
+    probs = [float(c) / len(data) for c in counts.values()]
+    for p in probs:
+        if p > 0.0:
+            ent -= p * math.log(p, base[unit])
+
+    return ent
+
+
+if __name__ == "__main__":
+    with open(sys.argv[1], "rb") as fh:
+        data = fh.read()
+        print(f"shannon: {eta(data, 'shannon')}")
+        print(f"natural: {eta(data, 'natural')}")
+        print(f"hartley: {eta(data, 'hartley')}")

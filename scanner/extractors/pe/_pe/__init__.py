@@ -1,12 +1,14 @@
 import typing as T
+
 import pefile
-import struct
+
 
 def load_pe_file(filepath: str) -> T.Optional[T.Any]:
     try:
         return pefile.PE(filepath, fast_load=True)
     except pefile.PEFormatError:
         return None
+
 
 def get_sections(filepath: str) -> T.Optional[T.List[T.Any]]:
     if (pe := load_pe_file(filepath)) is None:
@@ -15,17 +17,22 @@ def get_sections(filepath: str) -> T.Optional[T.List[T.Any]]:
     return [
         (
             section.Name,
+            section.SizeOfRawData,
             section.VirtualAddress,
             section.Misc_VirtualSize,
-            section.SizeOfRawData
-        ) for section in pe.sections
-    ] 
+            section.get_entropy(),
+        )
+        for section in pe.sections
+    ]
+
 
 def get_imports(filepath: str) -> T.Optional[T.List[T.Any]]:
     if (pe := load_pe_file(filepath)) is None:
         return None
-    
-    pe.parse_data_directories(directories=[pefile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_IMPORT"]])
+
+    pe.parse_data_directories(
+        directories=[pefile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_IMPORT"]]
+    )
     if not hasattr(pe, "IMAGE_DIRECTORY_ENTRY_IMPORT"):
         return None
 
@@ -33,18 +40,21 @@ def get_imports(filepath: str) -> T.Optional[T.List[T.Any]]:
     for entry in pe.DIRECTORY_ENTRY_IMPORT:
         for imp in entry.imports:
             acc += [entry.dll, imp.address, imp.name]
-    
+
     return acc
+
 
 def get_exports(filepath: str) -> T.Optional[T.List[T.Any]]:
     if (pe := load_pe_file(filepath)) is None:
         return None
-    
-    pe.parse_data_directories(directories=[pefile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_EXPORT"]])
+
+    pe.parse_data_directories(
+        directories=[pefile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_EXPORT"]]
+    )
     if not hasattr(pe, "IMAGE_DIRECTORY_ENTRY_EXPORT"):
         return None
 
     return [
-        [
-        pe.OPTIONAL_HEADER.ImageBase + exp.address, exp.ordinal, exp.name
-    ] for exp in pe.DIRECTORY_ENTRY_EXPORT.symbols]
+        [pe.OPTIONAL_HEADER.ImageBase + exp.address, exp.ordinal, exp.name]
+        for exp in pe.DIRECTORY_ENTRY_EXPORT.symbols
+    ]

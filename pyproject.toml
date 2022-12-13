@@ -16,6 +16,7 @@ pefile = "^2022.5.30"
 pdbparse = "^1.5"
 
 [tool.poetry.dev-dependencies]
+types-Flask = "^1.1.6"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

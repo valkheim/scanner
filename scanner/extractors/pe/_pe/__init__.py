@@ -58,3 +58,34 @@ def get_exports(filepath: str) -> T.Optional[T.List[T.Any]]:
         [pe.OPTIONAL_HEADER.ImageBase + exp.address, exp.ordinal, exp.name]
         for exp in pe.DIRECTORY_ENTRY_EXPORT.symbols
     ]
+
+
+def get_stamps(filepath: str) -> T.Optional[T.Dict[str, str]]:
+    if (pe := load_pe_file(filepath)) is None:
+        return None
+
+    pe.parse_data_directories()
+    acc = {
+        "FILE_HEADER": int(
+            pe.FILE_HEADER.dump_dict()["TimeDateStamp"]["Value"].split()[0], 16
+        ),
+    }
+
+    for directory in (
+        "DIRECTORY_ENTRY_IMPORT",
+        "DELAY_IMPORT_DESCRIPTOR",
+        "DIRECTORY_ENTRY_BOUND_IMPORT",  # + IMAGE_BOUND_FORWARDER_REF
+        "DIRECTORY_ENTRY_EXPORT",
+        "DIRECTORY_ENTRY_RESOURCE",
+        "DIRECTORY_ENTRY_LOAD_CONFIG",
+    ):
+        if hasattr(pe, directory):
+            acc[directory] = int(getattr(pe, directory).struct.TimeDateStamp)
+
+    if hasattr(pe, "DIRECTORY_ENTRY_DEBUG"):
+        for idx, debug_data in enumerate(pe.DIRECTORY_ENTRY_DEBUG):
+            acc[f"DIRECTORY_ENTRY_DEBUG DebugData #{idx}"] = int(
+                debug_data.struct.TimeDateStamp
+            )
+
+    return acc

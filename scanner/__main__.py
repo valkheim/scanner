@@ -28,7 +28,9 @@ def index():
         if (infos := read_result_infos(result)) is not None:
             last_results += [infos]
 
-    print(last_results)
+    last_results = sorted(
+        last_results, key=lambda d: d["last_update"], reverse=True
+    )
     return flask.render_template("index.html", last_results=last_results)
 
 

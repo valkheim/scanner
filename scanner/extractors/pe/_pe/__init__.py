@@ -71,21 +71,25 @@ def get_stamps(filepath: str) -> T.Optional[T.Dict[str, str]]:
         ),
     }
 
-    for directory in (
+    for directory_name in (
         "DIRECTORY_ENTRY_IMPORT",
         "DELAY_IMPORT_DESCRIPTOR",
         "DIRECTORY_ENTRY_BOUND_IMPORT",  # + IMAGE_BOUND_FORWARDER_REF
         "DIRECTORY_ENTRY_EXPORT",
         "DIRECTORY_ENTRY_RESOURCE",
         "DIRECTORY_ENTRY_LOAD_CONFIG",
+        "DIRECTORY_ENTRY_DEBUG",
     ):
-        if hasattr(pe, directory):
-            acc[directory] = int(getattr(pe, directory).struct.TimeDateStamp)
-
-    if hasattr(pe, "DIRECTORY_ENTRY_DEBUG"):
-        for idx, debug_data in enumerate(pe.DIRECTORY_ENTRY_DEBUG):
-            acc[f"DIRECTORY_ENTRY_DEBUG DebugData #{idx}"] = int(
-                debug_data.struct.TimeDateStamp
-            )
+        if hasattr(pe, directory_name):
+            directory = getattr(pe, directory_name)
+            if type(directory) is list:
+                for idx, dir_entry in enumerate(directory):
+                    acc[
+                        f"{directory_name} > {dir_entry.__class__.__name__} #{idx}"
+                    ] = int(dir_entry.struct.TimeDateStamp)
+            else:
+                acc[directory_name] = int(
+                    getattr(pe, directory_name).struct.TimeDateStamp
+                )
 
     return acc

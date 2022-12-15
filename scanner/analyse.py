@@ -62,7 +62,7 @@ def get_extractors_data(filedir: str) -> T.Dict[str, T.Any]:
     results = {}
     for file in files:
         subpath = os.sep.join(file.split(os.sep)[ldirs:])
-        with open(file, "rt") as fh:
+        with open(file, "rt", errors="ignore") as fh:
             data = fh.read()
             if len(data) > 0:
                 results[subpath] = data

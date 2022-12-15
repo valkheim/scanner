@@ -44,6 +44,7 @@ table {
 }
 
 tbody {
+    font-family: monospace;
     word-break: break-word;
 }
 

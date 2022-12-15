@@ -35,6 +35,7 @@ function handleFile(file) {
         body: formData,
     }
 
+    openModal()
     fetch("/upload", requestOptions).then(
         (response) => {
             window.location.replace(response.url);

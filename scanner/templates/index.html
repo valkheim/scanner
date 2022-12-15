@@ -1,7 +1,11 @@
 <!doctype html>
 
 <head>
+    {% if results %}
+    <title>Scanner ({{ results.infos.filename }})</title>
+    {% else %}
     <title>Scanner</title>
+    {% endif %}
     <link rel="stylesheet" href="{{ url_for('static',filename='styles/pure-min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static',filename='styles/styles.css') }}">
 </head>
@@ -62,8 +66,9 @@
             <a id="actions" class="anchor"></a>
             <h2>Actions</h2>
             <div class="actions-area">
-                <button id="action-rerun" class="pure-button">Rerun analysis</button>
+                <button id="action-rerun" class="pure-button open-modal">Rerun analysis</button>
                 <button id="action-save" class="pure-button">Save results</button>
+                <button for="modal-2" class="pure-button open-modal">load</button>
             </div>
         </div>
         {% endif %}
@@ -106,6 +111,16 @@
     <script src="{{ url_for('static',filename='scripts/actions.js') }}"> </script>
     {% endif %}
     <script src="{{ url_for('static',filename='scripts/random.js') }}"> </script>
+    <script src="{{ url_for('static',filename='scripts/modal.js') }}"> </script>
+
+
+
+    <div class="modal">
+        <div class="modal__inner">
+            <h2>Loading</h2>
+            <img src="https://i.imgur.com/TPx9zYo.gif" alt="" />
+        </div>
+    </div>
 
 </body>
 

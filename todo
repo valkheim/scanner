@@ -2,3 +2,5 @@
 * create db schema from stdout files
 * local analyzer (e.g. entropy >= 7.6)
 * global analyzer
+
+* chronological listing for last results

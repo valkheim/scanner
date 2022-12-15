@@ -41,6 +41,9 @@ main a:hover {
 
 table {
     font-size: .9rem;
+}
+
+tbody {
     word-break: break-word;
 }
 
@@ -219,4 +222,54 @@ main>div {
     padding: 1em;
     text-align: center;
     color: var(--green);
+}
+
+.modal {
+    visibility: hidden;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    text-align: left;
+    background: rgba(0, 0, 0, .9);
+}
+
+.modal__bg {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    cursor: pointer;
+}
+
+.modal__inner {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 40vw;
+    height: 40vh;
+    margin: auto;
+    overflow: auto;
+    background: var(--black);
+    color: var(--white);
+    border-radius: 5px;
+    padding: 1em 2em;
+}
+
+.modal__inner img {
+    height: 80%;
+    width: 100%;
+}
+
+@media screen and (max-width: 768px) {
+
+    .modal__inner {
+        width: 90%;
+        height: 90%;
+        box-sizing: border-box;
+    }
 }

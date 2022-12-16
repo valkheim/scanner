@@ -1,6 +1,7 @@
 import typing as T
 
 import pefile
+from _pe.rich_header import KNOWN_PRODUCT_IDS, vs_version, vs_version_fallback
 
 
 def load_pe_file(filepath: str) -> T.Optional[T.Any]:
@@ -17,9 +18,10 @@ def get_sections(filepath: str) -> T.Optional[T.List[T.Any]]:
     return [
         (
             section.Name,
-            section.SizeOfRawData,
             section.VirtualAddress,
+            section.SizeOfRawData,
             section.Misc_VirtualSize,
+            section.Characteristics,
             section.get_entropy(),
         )
         for section in pe.sections
@@ -93,3 +95,27 @@ def get_stamps(filepath: str) -> T.Optional[T.Dict[str, str]]:
                 )
 
     return acc
+
+
+def get_rich_header(filepath: str) -> T.Optional[T.Any]:
+    if (pe := load_pe_file(filepath)) is None:
+        return None
+
+    if (rich_header := pe.parse_rich_header()) is None:
+        return None
+
+    print("id,type,version,count,vs")
+    for comp_id, count in zip(
+        rich_header["values"][::2], rich_header["values"][1::2]
+    ):
+        version = comp_id & 0xFFFF
+        product_id = (comp_id & 0xFFFF0000) >> 0x10
+        product = "Unknown"
+        if product_id in KNOWN_PRODUCT_IDS:
+            product = KNOWN_PRODUCT_IDS[product_id]
+
+        vs = "Unknown"
+        if (vs := vs_version(comp_id)) is None:
+            vs = vs_version_fallback(product_id)
+
+        print(product_id, product, version, count, vs, sep=",")

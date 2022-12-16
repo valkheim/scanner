@@ -253,6 +253,8 @@ main>div {
     left: 0;
     width: 40vw;
     height: 40vh;
+    max-height: 500px;
+    max-width: 500px;
     margin: auto;
     overflow: auto;
     background: var(--black);

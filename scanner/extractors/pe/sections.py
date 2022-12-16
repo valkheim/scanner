@@ -14,13 +14,14 @@ if __name__ == "__main__":
     if (sections := get_sections(sys.argv[1])) is None:
         sys.exit(1)
 
-    print("name,raw_size,virtual_address,virtual_size,entropy")
-    for name, rs, va, vs, ent in sections:
+    print("name,virtual_address,raw_size,virtual_size,characteristics,entropy")
+    for name, va, rs, vs, char, ent in sections:
         line = [
             read_c_string(name),
-            f"{rs:#0x}",
             f"{va:#0x}",
+            f"{rs:#0x}",
             f"{vs:#0x}",
+            f"{char:#0x}",
             f"{ent}",
         ]
         print(",".join(line))

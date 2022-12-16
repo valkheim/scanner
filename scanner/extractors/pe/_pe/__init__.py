@@ -35,15 +35,28 @@ def get_imports(filepath: str) -> T.Optional[T.List[T.Any]]:
     pe.parse_data_directories(
         directories=[pefile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_IMPORT"]]
     )
-    if not hasattr(pe, "IMAGE_DIRECTORY_ENTRY_IMPORT"):
+    if not hasattr(pe, "DIRECTORY_ENTRY_IMPORT"):
         return None
 
     acc = []
     for entry in pe.DIRECTORY_ENTRY_IMPORT:
         for imp in entry.imports:
-            acc += [entry.dll, imp.address, imp.name]
+            acc += [(entry.dll, imp.address, imp.name)]
 
     return acc
+
+
+def get_imports_hash(filepath: str) -> T.Optional[str]:
+    if (pe := load_pe_file(filepath)) is None:
+        return None
+
+    pe.parse_data_directories(
+        directories=[pefile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_IMPORT"]]
+    )
+    if not hasattr(pe, "DIRECTORY_ENTRY_IMPORT"):
+        return None
+
+    return pe.get_imphash()
 
 
 def get_exports(filepath: str) -> T.Optional[T.List[T.Any]]:
@@ -53,7 +66,7 @@ def get_exports(filepath: str) -> T.Optional[T.List[T.Any]]:
     pe.parse_data_directories(
         directories=[pefile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_EXPORT"]]
     )
-    if not hasattr(pe, "IMAGE_DIRECTORY_ENTRY_EXPORT"):
+    if not hasattr(pe, "DIRECTORY_ENTRY_EXPORT"):
         return None
 
     return [
@@ -104,7 +117,7 @@ def get_rich_header(filepath: str) -> T.Optional[T.Any]:
     if (rich_header := pe.parse_rich_header()) is None:
         return None
 
-    print("id,type,version,count,vs")
+    acc = []
     for comp_id, count in zip(
         rich_header["values"][::2], rich_header["values"][1::2]
     ):
@@ -118,4 +131,6 @@ def get_rich_header(filepath: str) -> T.Optional[T.Any]:
         if (vs := vs_version(comp_id)) is None:
             vs = vs_version_fallback(product_id)
 
-        print(product_id, product, version, count, vs, sep=",")
+        acc += [(product_id, product, version, count, vs)]
+
+    return acc

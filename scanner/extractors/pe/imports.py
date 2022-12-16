@@ -11,10 +11,7 @@ if __name__ == "__main__":
     print("dll,address,name")
     for dll, address, name in imports:
         print(
-            dll,
-            f"{address:#x}",
-            name,
-            sep=","
+            dll.decode("utf-8"), f"{address:#x}", name.decode("utf-8"), sep=","
         )
 
     sys.exit(0)

@@ -110,7 +110,7 @@ def get_stamps(filepath: str) -> T.Optional[T.Dict[str, str]]:
     return acc
 
 
-def get_rich_header(filepath: str) -> T.Optional[T.Any]:
+def get_rich_header(filepath: str) -> T.Optional[T.List[T.Any]]:
     if (pe := load_pe_file(filepath)) is None:
         return None
 
@@ -134,3 +134,35 @@ def get_rich_header(filepath: str) -> T.Optional[T.Any]:
         acc += [(product_id, product, version, count, vs)]
 
     return acc
+
+
+def resource(pe, r, parents=[], acc=[]):
+    if hasattr(r, "data"):
+        return acc + [
+            "-".join(parents + [str(r.id)]),
+            r.name or "Unknown",
+            r.data.struct.Size,
+            r.data.struct.OffsetToData,
+            pefile.LANG.get(r.data.lang, "Unknown"),
+            pefile.get_sublang_name_for_lang(r.data.lang, r.data.sublang),
+        ]
+
+    else:
+        parents += [str(r.id)]
+        for entry in r.directory.entries:
+            return resource(pe, entry, parents, acc)
+
+
+def get_resources(filepath: str) -> T.Optional[T.List[T.Any]]:
+    if (pe := load_pe_file(filepath)) is None:
+        return None
+
+    pe.parse_data_directories(
+        directories=[pefile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_RESOURCE"]]
+    )
+    if not hasattr(pe, "DIRECTORY_ENTRY_RESOURCE"):
+        return None
+
+    return [
+        resource(pe, entry) for entry in pe.DIRECTORY_ENTRY_RESOURCE.entries
+    ]

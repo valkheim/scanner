@@ -4,6 +4,11 @@ const openModal = () => {
 }
 
 document.querySelectorAll(".open-modal").forEach((e) => {
-    console.debug("click open modal")
     e.addEventListener('click', () => openModal())
 })
+
+window.onload = () => {
+    const modalImg = document.querySelector(".modal .modal__inner img")
+    const id = Math.floor(Math.random() * 4)
+    modalImg.src = `/static/img/sleepy/${id}.gif`
+}

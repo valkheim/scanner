@@ -1,10 +1,32 @@
 import os
-import json
+import subprocess
 import typing as T
 
-def readfile(filepath: str) -> bytes:
-    with open(filepath, "rb") as fh:
-        return fh.read()
+
+def run_process(
+    args: T.List[str],
+    stdout: T.Union[T.BinaryIO, T.TextIO, int] = subprocess.PIPE,
+    stderr: T.Union[T.BinaryIO, T.TextIO, int] = subprocess.PIPE,
+    write: T.Optional[str] = None,
+    **kwargs: T.Any,
+) -> T.Tuple[int, str, str]:
+    p = subprocess.Popen(
+        args,
+        universal_newlines=True,
+        close_fds=False,
+        stdout=stdout,
+        stderr=stderr,
+        **kwargs,
+    )
+    o, e = p.communicate(write)
+    return p.returncode, o, e
+
+
+def yield_files(from_dir: str) -> T.Iterator[str]:
+    for root, _, files in os.walk(from_dir):
+        for file in files:
+            yield os.path.join(os.path.basename(root), file)
+
 
 def hexdump(data: bytes, offset: int = 0) -> str:
     lines = []
@@ -36,12 +58,3 @@ def hexdump(data: bytes, offset: int = 0) -> str:
         lines.append(f"{i + offset:#08x}: {hexline}|{asciiline}|")
 
     return "\n".join(lines)
-
-def read_result_infos(result_hash: str) -> T.Dict[str, T.Any]:
-    results_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "results"))
-    infos_path = os.path.join(results_dir, result_hash, "infos.json")
-    if not os.path.exists(infos_path):
-        return None
-
-    with open(infos_path, "rt") as fh:
-        return json.load(fh)

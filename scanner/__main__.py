@@ -1,97 +1,26 @@
-import datetime
-import hashlib
-import json
-import os
+import argparse
+import sys
 
-import flask
-
-from scanner.analyse import get_extractors_data, run_extractors
-from scanner.utils import read_result_infos
-
-app = flask.Flask(__name__)
-app.secret_key = "super secret key"
+import scanner.cli
+import scanner.gui
 
 
-def get_results_dir():
-    results_dir = os.path.normpath(
-        os.path.join(os.path.dirname(__file__), "..", "results")
-    )
-    os.makedirs(results_dir, exist_ok=True)
-    return results_dir
-
-
-@app.route("/", methods=["GET"])
-def index():
-    last_results = []
-    results_dir = get_results_dir()
-    for result in os.listdir(results_dir):
-        if (infos := read_result_infos(result)) is not None:
-            last_results += [infos]
-
-    last_results = sorted(
-        last_results, key=lambda d: d["last_update"], reverse=True
-    )
-    return flask.render_template("index.html", last_results=last_results)
-
-
-@app.route("/r/<hash>", methods=["GET"])
-def result(hash):
-    results_dir = get_results_dir()
-    dst_dir = os.path.join(results_dir, hash)
-    results = {
-        "infos": read_result_infos(hash),
-        "extractors": get_extractors_data(dst_dir),
-    }
-    return flask.render_template("index.html", results=results)
-
-
-@app.route("/a/<hash>")
-def analyse(hash):
-    infos = read_result_infos(hash)
-    dst_dir = os.path.normpath(
-        os.path.join(os.path.dirname(__file__), "..", "results", hash)
-    )
-    dst_file = os.path.join(dst_dir, infos["filename"])
-    run_extractors(dst_file)
-    return flask.redirect(flask.url_for("result", hash=hash))
-
-
-@app.route("/upload", methods=["POST"])
-def upload():
-    f = flask.request.files.get("file")
-    hash = hashlib.sha1(f.read()).hexdigest()
-    f.seek(0)
-    dst_dir = os.path.normpath(
-        os.path.join(os.path.dirname(__file__), "..", "results", hash)
-    )
-    dst_file = os.path.join(dst_dir, f.filename)
-    if not os.path.isdir(dst_dir):
-        os.mkdir(dst_dir)
-        f.save(dst_file)
-
-    with open(os.path.join(dst_dir, "infos.json"), "wt") as fh:
-        fh.write(
-            json.dumps(
-                {
-                    "filename": f.filename,
-                    "sha1": hash,
-                    "last_update": datetime.datetime.now().strftime(
-                        "%Y-%m-%d %H:%M:%S"
-                    ),
-                }
-            )
-        )
-
-    return flask.redirect(flask.url_for("analyse", hash=hash))
+def get_arguments() -> argparse.Namespace:
+    """Parse CLI options"""
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--gui", action="store_true")
+    parser.add_argument("--last", action="store_true")
+    parser.add_argument("--file")
+    return parser.parse_args()
 
 
 def main():
-    app.jinja_env.auto_reload = True
-    app.config["TEMPLATES_AUTO_RELOAD"] = True
-    app.debug = True
-    app.run()
-    flask.session.clear()
+    args = get_arguments()
+    if args.gui:
+        return scanner.gui.run(args)
+
+    return scanner.cli.run(args)
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

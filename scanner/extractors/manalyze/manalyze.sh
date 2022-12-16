@@ -4,4 +4,4 @@ SCRIPT=$(readlink -f "$0")
 SCRIPTPATH=$(dirname "$SCRIPT")
 BINPATH="$SCRIPTPATH/_bin"
 
-"$BINPATH/manalyze" --plugins all --pe "$1"
+"$BINPATH/manalyze" --pe "$1" # --plugins all

@@ -6,9 +6,9 @@ import typing as T
 
 def run_process(
     args: T.List[str],
-    write: T.Optional[str] = None,
     stdout: T.Union[T.BinaryIO, T.TextIO, int] = subprocess.PIPE,
     stderr: T.Union[T.BinaryIO, T.TextIO, int] = subprocess.PIPE,
+    write: T.Optional[str] = None,
     **kwargs: T.Any
 ) -> T.Tuple[int, str, str]:
     p = subprocess.Popen(

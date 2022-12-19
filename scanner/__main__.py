@@ -16,6 +16,9 @@ def get_arguments() -> argparse.Namespace:
     cli_parser = subs.add_parser("cli")
     cli_parser.set_defaults(run=scanner.cli.run)
     cli_parser.add_argument("--file")
+    cli_parser.add_argument("--dir")
+    cli_parser.add_argument("--hash")
+    cli_parser.add_argument("--last", action="store_true")
 
     return parser.parse_args()
 

@@ -2,7 +2,10 @@ import datetime
 import glob
 import hashlib
 import json
+import multiprocessing
+import multiprocessing.dummy
 import os
+import time
 import typing as T
 
 from scanner.utils import run_process, yield_files
@@ -56,15 +59,27 @@ def yield_valid_extractor_paths(dst_file):
 
 
 def run_extractors(hash: str) -> None:
+    start = time.perf_counter()
+    files = []
+    args = []
     dst_dir = get_results_dir(hash)
     infos = read_result_infos(hash)
     dst_file = os.path.join(dst_dir, infos["filename"])
     for extractor_path, results_dir in yield_valid_extractor_paths(dst_file):
-        with open(os.path.join(results_dir, "stdout.log"), "wt") as stdout:
-            with open(os.path.join(results_dir, "stderr.log"), "wt") as stderr:
-                run_process(
-                    [extractor_path, dst_file], stdout=stdout, stderr=stderr
-                )
+        files.append(open(os.path.join(results_dir, "stdout.log"), "wt"))
+        files.append(open(os.path.join(results_dir, "stderr.log"), "wt"))
+        args.append([[extractor_path, dst_file], files[-2], files[-1]])
+
+    with multiprocessing.dummy.Pool(
+        multiprocessing.cpu_count() - 1 or 1
+    ) as pool:
+        pool.starmap(run_process, args)
+
+    for f in files:
+        f.close()
+
+    end = time.perf_counter()
+    print(f"Extractors ran in {round(end-start, 2)} second(s) for {hash}")
 
 
 def get_extractors_data(filedir: str) -> T.Dict[str, T.Any]:

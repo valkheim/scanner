@@ -172,18 +172,23 @@ def get_header_infos(filepath: str):
     if (pe := load_pe_file(filepath)) is None:
         return None
 
-    return {
-        "MajorLinkerVersion": pe.OPTIONAL_HEADER.MajorLinkerVersion,
-        "MinorLinkerVersion": pe.OPTIONAL_HEADER.MinorLinkerVersion,
-        "AddressOfEntryPoint": pe.OPTIONAL_HEADER.AddressOfEntryPoint,
-        "SizeOfImage": pe.OPTIONAL_HEADER.SizeOfImage,
-        "SizeOfCode": pe.OPTIONAL_HEADER.SizeOfCode,
-        "BaseOfCode": pe.OPTIONAL_HEADER.BaseOfCode,
-        "BaseOfData": pe.OPTIONAL_HEADER.BaseOfData,
-        "SizeOfHeaders": pe.OPTIONAL_HEADER.SizeOfHeaders,
-        "SizeOfStackReserve": pe.OPTIONAL_HEADER.SizeOfStackReserve,
-        "SizeOfStackCommit": pe.OPTIONAL_HEADER.SizeOfStackCommit,
-        "SizeOfHeapReserve": pe.OPTIONAL_HEADER.SizeOfHeapReserve,
-        "SizeOfHeapCommit": pe.OPTIONAL_HEADER.SizeOfHeapCommit,
-        "CheckSum": pe.OPTIONAL_HEADER.CheckSum,
-    }
+    acc = {}
+    for value in [
+        "MajorLinkerVersion",
+        "MinorLinkerVersion",
+        "AddressOfEntryPoint",
+        "SizeOfImage",
+        "SizeOfCode",
+        "BaseOfCode",
+        "BaseOfData",
+        "SizeOfHeaders",
+        "SizeOfStackReserve",
+        "SizeOfStackCommit",
+        "SizeOfHeapReserve",
+        "SizeOfHeapCommit",
+        "CheckSum",
+    ]:
+        if hasattr(pe.OPTIONAL_HEADER, value):
+            acc[value] = getattr(pe.OPTIONAL_HEADER, value)
+
+    return acc

@@ -1,5 +1,6 @@
 import os
 import subprocess
+import time
 import typing as T
 
 
@@ -10,6 +11,7 @@ def run_process(
     write: T.Optional[str] = None,
     **kwargs: T.Any,
 ) -> T.Tuple[int, str, str]:
+    start = time.perf_counter()
     p = subprocess.Popen(
         args,
         universal_newlines=True,
@@ -19,6 +21,10 @@ def run_process(
         **kwargs,
     )
     o, e = p.communicate(write)
+    end = time.perf_counter()
+    print(
+        f"Process {args[0].split(os.sep)[-1]} ran in {round(end-start, 2)} second(s)"
+    )
     return p.returncode, o, e
 
 

@@ -13,8 +13,8 @@ if __name__ == "__main__":
         print(
             f"{address:#x}",
             ordinal,
-            name.decode("utf-8"),
-            sep=","
+            name.decode("utf-8") if name else "",
+            sep=",",
         )
 
     sys.exit(0)

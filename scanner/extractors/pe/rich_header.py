@@ -10,6 +10,13 @@ if __name__ == "__main__":
 
     print("id,type,version,count,vs")
     for product_id, product, version, count, vs in rich_header:
-        print(product_id, product, version, count, vs, sep=",")
+        print(
+            product_id,
+            product or "Unknown",
+            version,
+            count,
+            vs or "Unknown",
+            sep=",",
+        )
 
     sys.exit(0)

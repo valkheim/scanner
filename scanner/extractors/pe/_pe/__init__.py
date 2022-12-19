@@ -123,11 +123,9 @@ def get_rich_header(filepath: str) -> T.Optional[T.List[T.Any]]:
     ):
         version = comp_id & 0xFFFF
         product_id = (comp_id & 0xFFFF0000) >> 0x10
-        product = "Unknown"
         if product_id in KNOWN_PRODUCT_IDS:
             product = KNOWN_PRODUCT_IDS[product_id]
 
-        vs = "Unknown"
         if (vs := vs_version(comp_id)) is None:
             vs = vs_version_fallback(product_id)
 
@@ -148,7 +146,10 @@ def resource(pe, r, parents=[], acc=[]):
         ]
 
     else:
-        parents += [str(r.id)]
+        if r.name:
+            parents += [str(r.name)]
+        else:
+            parents += [str(r.id)]
         for entry in r.directory.entries:
             return resource(pe, entry, parents, acc)
 

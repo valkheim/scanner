@@ -142,7 +142,6 @@ def run(args: argparse.Namespace) -> int:
     # Fetch malware features
     if not os.path.exists("cache/malware_feature_values.joblib"):
         feature_names, malware_feature_values = handle_dir(args.malwares_dir)
-        breakpoint()
         joblib.dump(
             malware_feature_values, "cache/malware_feature_values.joblib"
         )

@@ -1,6 +1,8 @@
+import itertools
 import typing as T
 
 import pefile
+from _pe.packers import PACKER_SECTIONS
 from _pe.rich_header import KNOWN_PRODUCT_IDS, vs_version, vs_version_fallback
 
 
@@ -26,6 +28,21 @@ def get_sections(filepath: str) -> T.Optional[T.List[T.Any]]:
         )
         for section in pe.sections
     ]
+
+
+def get_packers(filepath) -> T.Optional[T.List[str]]:
+    if (sections := get_sections(filepath)) is None:
+        return []
+
+    candidates = []
+    for name, _va, _rs, _vs, _char, _ent in sections:
+        section_name = "".join(
+            (map(chr, itertools.takewhile(lambda x: x, name)))
+        )
+        if section_name in PACKER_SECTIONS.keys():
+            candidates.append(PACKER_SECTIONS[section_name])
+
+    return list(set(candidates))
 
 
 def get_imports(filepath: str) -> T.Optional[T.List[T.Any]]:

@@ -3,6 +3,7 @@
 # https://github.com/lief-project/LIEF/blob/master/examples/python/authenticode/authenticode_reader.py
 
 import sys
+import typing as T
 
 import lief
 
@@ -252,43 +253,48 @@ def print_all(sig: lief.PE.Signature, indent: int = 2):
                 print_attr(indent + 4, auth)
 
 
+def get_lief_binary(filepath: str) -> T.Optional[lief.PE.Binary]:
+    if not lief.PE.is_pe(filepath):
+        return None
+
+    try:
+        return lief.PE.parse(filepath)
+
+    except lief.exception:
+        # print(e)
+        return None
+
+
+def has_authenticode(binary: lief.PE.Binary):
+    # flags = lief.PE.Signature.VERIFICATION_CHECKS.DEFAULT
+    flags = lief.PE.Signature.VERIFICATION_CHECKS.SKIP_CERT_TIME
+    return (
+        binary.verify_signature(flags)
+        != lief.PE.Signature.VERIFICATION_FLAGS.NO_SIGNATURE
+    )
+
+
 if __name__ == "__main__":
-    file = sys.argv[1]
-    if lief.PE.is_pe(file):
-        binary = None
-        try:
-            binary: lief.PE.Binary = lief.PE.parse(file)
-            if binary is None:
-                print("Error while parsing {}".format(file))
-                sys.exit(1)
+    if (binary := get_lief_binary(sys.argv[1])) is None:
+        sys.exit(1)
 
-        except lief.exception as e:
-            print(e)
-            sys.exit(1)
+    if not has_authenticode(binary):
+        sys.exit(0)
 
-        # flags = lief.PE.Signature.VERIFICATION_CHECKS.DEFAULT
-        flags = lief.PE.Signature.VERIFICATION_CHECKS.SKIP_CERT_TIME
-        if (
-            res := binary.verify_signature(flags)
-        ) == lief.PE.Signature.VERIFICATION_FLAGS.NO_SIGNATURE:
-            sys.exit(0)
-
-        print(
-            "Binary MD5     authentihash: {}".format(
-                binary.authentihash_md5.hex()
-            )
+    print(
+        "Binary MD5     authentihash: {}".format(binary.authentihash_md5.hex())
+    )
+    print(
+        "Binary SHA-1   authentihash: {}".format(
+            binary.authentihash_sha1.hex()
         )
-        print(
-            "Binary SHA-1   authentihash: {}".format(
-                binary.authentihash_sha1.hex()
-            )
+    )
+    print(
+        "Binary SHA-256 authentihash: {}".format(
+            binary.authentihash_sha256.hex()
         )
-        print(
-            "Binary SHA-256 authentihash: {}".format(
-                binary.authentihash_sha256.hex()
-            )
-        )
-        for sig in binary.signatures:
-            print_all(sig)
+    )
+    for sig in binary.signatures:
+        print_all(sig)
 
     sys.exit(0)

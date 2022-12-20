@@ -5,7 +5,7 @@ import sys
 from collections import Counter
 
 
-def eta(data: bytes, unit: str):
+def get_entropy(data: bytes, unit: str):
     base = {"shannon": 2.0, "natural": math.exp(1), "hartley": 10.0}
 
     if len(data) <= 1:
@@ -28,6 +28,6 @@ def eta(data: bytes, unit: str):
 if __name__ == "__main__":
     with open(sys.argv[1], "rb") as fh:
         data = fh.read()
-        print(f"shannon: {eta(data, 'shannon')}")
-        print(f"natural: {eta(data, 'natural')}")
-        print(f"hartley: {eta(data, 'hartley')}")
+        print(f"shannon: {get_entropy(data, 'shannon')}")
+        print(f"natural: {get_entropy(data, 'natural')}")
+        print(f"hartley: {get_entropy(data, 'hartley')}")

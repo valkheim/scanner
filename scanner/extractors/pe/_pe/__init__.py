@@ -140,6 +140,7 @@ def get_rich_header(filepath: str) -> T.Optional[T.List[T.Any]]:
     ):
         version = comp_id & 0xFFFF
         product_id = (comp_id & 0xFFFF0000) >> 0x10
+        product = "Unknown"
         if product_id in KNOWN_PRODUCT_IDS:
             product = KNOWN_PRODUCT_IDS[product_id]
 
@@ -210,3 +211,19 @@ def get_header_infos(filepath: str):
             acc[value] = getattr(pe.OPTIONAL_HEADER, value)
 
     return acc
+
+
+def get_subsystem(filepath: str):
+    if (pe := load_pe_file(filepath)) is None:
+        return None, None
+
+    if not hasattr(pe.OPTIONAL_HEADER, "Subsystem"):
+        return None, None
+
+    if pe.OPTIONAL_HEADER.Subsystem in pefile.SUBSYSTEM_TYPE:
+        return (
+            pe.OPTIONAL_HEADER.Subsystem,
+            pefile.SUBSYSTEM_TYPE[pe.OPTIONAL_HEADER.Subsystem],
+        )
+
+    return pe.OPTIONAL_HEADER.Subsystem, None

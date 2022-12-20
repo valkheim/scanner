@@ -45,21 +45,25 @@ def handle_win2k_pe(debug_data: bytes, pe_file: str) -> T.Optional[str]:
     return guid, filepath
 
 
-if __name__ == "__main__":
-    input_filepath = sys.argv[1]
+def get_debug_infos(filepath: str) -> T.Optional[T.Tuple[str, str]]:
     try:
-        debug_data, debug_type = get_pe_debug_data(input_filepath)
+        debug_data, debug_type = get_pe_debug_data(filepath)
 
     except Exception:  # pefile.PEFormatError: # DOS Header magic not found, pdbparse lib error
-        sys.exit(1)
+        return None, None
 
     if debug_type == "IMAGE_DEBUG_TYPE_CODEVIEW":
-        guid, filepath = handle_xp_pe(debug_data)
+        return handle_xp_pe(debug_data)
 
     elif debug_type == "IMAGE_DEBUG_TYPE_MISC":
-        guid, filepath = handle_win2k_pe(debug_data, input_filepath)
+        return handle_win2k_pe(debug_data, filepath)
 
-    else:
+    return None, None
+
+
+if __name__ == "__main__":
+    guid, filepath = get_debug_infos(sys.argv[1])
+    if guid is None and filepath is None:
         sys.exit(1)
 
     print("guid,filepath")

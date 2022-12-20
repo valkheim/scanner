@@ -18,6 +18,8 @@ lief = "^0.12.3"
 pandas = "^1.5.2"
 scikit-learn = "^1.2.0"
 joblib = "^1.2.0"
+seaborn = "0.11"
+numpy = "^1.24.0"
 
 [tool.poetry.dev-dependencies]
 types-Flask = "^1.1.6"

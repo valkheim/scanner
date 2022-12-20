@@ -5,23 +5,44 @@ import typing as T
 
 import joblib
 import pandas
+import seaborn
 from sklearn.tree import DecisionTreeClassifier, export_graphviz
 
 from scanner.extractors.entropy.entropy import get_entropy
 from scanner.extractors.pe.authenticode import get_lief_binary, has_authenticode
+from scanner.extractors.pe.debug import get_debug_infos
 
 sys.path.append(
     os.path.join(os.path.dirname(__file__), "extractors", "pe")
 )  # noqa
+import collections
+import re
+
 from scanner.extractors.pe._pe import (  # noqa
     get_exports,
     get_header_infos,
     get_imports,
     get_packers,
     get_resources,
+    get_rich_header,
     get_sections,
     get_stamps,
+    get_subsystem,
 )
+
+ASCII_BYTE = rb" !\"#\$%&\'\(\)\*\+,-\./0123456789:;<=>\?@ABCDEFGHIJKLMNOPQRSTUVWXYZ\[\]\^_`abcdefghijklmnopqrstuvwxyz\{\|\}\\\~\t"
+
+
+def feature_amount_of_ascii_strings(filepath: str) -> int:
+    with open(filepath, "rb") as fh:
+        ascii_re = re.compile(rb"([%s]{%d,})" % (ASCII_BYTE, 5))
+        return sum(1 for _ in re.finditer(ascii_re, fh.read()))
+
+
+def feature_amount_of_unicode_strings(filepath: str) -> int:
+    with open(filepath, "rb") as fh:
+        unicode_re = re.compile(b"((?:[%s]\x00){%d,})" % (ASCII_BYTE, 5))
+        return sum(1 for _ in re.finditer(unicode_re, fh.read()))
 
 
 def feature_amount_of_exports(filepath: str):
@@ -30,6 +51,13 @@ def feature_amount_of_exports(filepath: str):
 
 def feature_amount_of_imports(filepath: str) -> int:
     return len(get_imports(filepath) or [])
+
+
+def feature_amount_of_distinct_import_modules(filepath: str) -> int:
+    if (imports := get_imports(filepath)) is None:
+        return 0
+
+    return len(set([module for module, _, _ in imports]))
 
 
 def feature_amount_of_sections(filepath: str) -> int:
@@ -78,6 +106,26 @@ def feature_has_authenticode(filepath: str) -> int:
     return int(has_authenticode(binary))
 
 
+def feature_has_debug_infos(filepath: str) -> int:
+    guid, filepath = get_debug_infos(filepath)
+    return int(guid is not None or filepath is not None)
+
+
+def feature_has_rich_header(filepath: str) -> int:
+    return int(get_rich_header(filepath) is not None)
+
+
+def feature_get_subsystem(filepath: str):
+    ss_id, _ = get_subsystem(filepath)
+    # return int(ss_id or 0)
+    return {
+        "subsystem_is_unknown": int(ss_id == 0),
+        "subsystem_is_native": int(ss_id == 1),
+        "subsystem_is_gui": int(ss_id == 2),
+        "subsystem_is_cui": int(ss_id == 3),
+    }
+
+
 #####################
 
 
@@ -85,13 +133,23 @@ def handle_file(filepath: str) -> T.Dict[str, int]:
     return {
         "amount_of_exports": feature_amount_of_exports(filepath),
         "amount_of_imports": feature_amount_of_imports(filepath),
+        "amount_of_distinct_import_modules": feature_amount_of_distinct_import_modules(
+            filepath
+        ),
         "amount_of_sections": feature_amount_of_sections(filepath),
         "amount_of_resources": feature_amount_of_resources(filepath),
         "amount_of_zero_stamps": feature_amount_of_zero_stamps(filepath),
+        "amount_of_ascii_strings": feature_amount_of_ascii_strings(filepath),
+        "amount_of_unicode_strings": feature_amount_of_unicode_strings(
+            filepath
+        ),
         "has_non_zero_checksum": feature_has_non_zero_checksum(filepath),
-        "shannon_entropy": feature_get_shannon_entropy(filepath),
         "has_packer": feature_has_packer(filepath),
         "has_authenticode": feature_has_authenticode(filepath),
+        "has_debug_infos": feature_has_debug_infos(filepath),
+        "has_rich_header": feature_has_rich_header(filepath),
+        "shannon_entropy": feature_get_shannon_entropy(filepath),
+        **feature_get_subsystem(filepath),
         # "amount_of_stamps": len(stamps.values()) if stamps else 0,
     }
 
@@ -113,11 +171,37 @@ def handle_dir(dirpath: str) -> str:
     return feature_names, feature_values
 
 
+def create_scatter_matrix(
+    feature_values,
+    feature_names,
+    benign_feature_values,
+    malware_feature_values,
+):
+    print("Create scatter matrix")
+    df = pandas.DataFrame(feature_values, columns=feature_names)
+    for col in df:
+        df[col] = df[col].astype(float)
+
+    df["__type"] = ["Benign"] * len(benign_feature_values) + ["Malware"] * len(
+        malware_feature_values
+    )
+    scatter = seaborn.pairplot(
+        df,
+        kind="scatter",
+        hue="__type",
+        diag_kind="hist",
+        corner=True,
+        markers=["o", "D"],
+    )
+    scatter.fig.savefig("cache/scatter.png")
+
+
 def create_decision_tree(
     feature_values, feature_names, data_class_distribution, class_names
 ):
+    print("Create decision tree")
     X = pandas.DataFrame(feature_values, columns=feature_names)
-    y = pandas.DataFrame(data_class_distribution, columns=["Data class"])
+    y = pandas.DataFrame(data_class_distribution, columns=["Binary type"])
     classifier = DecisionTreeClassifier(
         criterion="gini",
         splitter="random",
@@ -129,13 +213,13 @@ def create_decision_tree(
     classifier.fit(X.values, y)
     export_graphviz(
         classifier,
-        out_file="classifier.dot",
+        out_file="cache/classifier.dot",
         class_names=class_names,
         feature_names=feature_names,
         filled=True,
         rounded=True,
     )
-    os.system("dot classifier.dot -Tpng -o classifier.png")
+    os.system("dot cache/classifier.dot -Tpng -o cache/classifier.png")
 
 
 def run(args: argparse.Namespace) -> int:
@@ -176,9 +260,23 @@ def run(args: argparse.Namespace) -> int:
         malware_feature_values
     )
 
+    # Visualize feature
+    # create_scatter_matrix(feature_values, feature_names, benign_feature_values, malware_feature_values)
+    from sklearn.linear_model import LinearRegression
+
+    X = pandas.DataFrame(feature_values, columns=feature_names)
+    y = pandas.DataFrame(data_class_distribution, columns=["Binary type"])
+    model = LinearRegression()
+    model.fit(X, y)
+    importance = model.coef_
+    print(importance)
+    # summarize feature importance
+    for i, v in enumerate(importance):
+        print("Feature: %0d, Score: %.5f" % (i, v))
+
     # Classify
-    create_decision_tree(
-        feature_values, feature_names, data_class_distribution, class_names
-    )
+    # create_decision_tree(
+    #    feature_values, feature_names, data_class_distribution, class_names
+    # )
 
     return 0

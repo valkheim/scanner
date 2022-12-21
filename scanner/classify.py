@@ -4,6 +4,7 @@ import sys
 import typing as T
 
 import joblib
+import lief
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -23,15 +24,16 @@ sys.path.append(
 )  # noqa
 import re
 
-from scanner.extractors.pe._pe import get_exports  # noqa
 from scanner.extractors.pe._pe import get_header_infos  # noqa
 from scanner.extractors.pe._pe import get_imports  # noqa
 from scanner.extractors.pe._pe import get_packers  # noqa
 from scanner.extractors.pe._pe import get_resources  # noqa
 from scanner.extractors.pe._pe import get_rich_header  # noqa
 from scanner.extractors.pe._pe import get_sections  # noqa
+from scanner.extractors.pe._pe import get_size_of_optional_header  # noqa
 from scanner.extractors.pe._pe import get_stamps  # noqa
 from scanner.extractors.pe._pe import get_subsystem  # noqa
+from scanner.extractors.pe._pe import get_exports, get_optional_header  # noqa
 
 ASCII_BYTE = rb" !\"#\$%&\'\(\)\*\+,-\./0123456789:;<=>\?@ABCDEFGHIJKLMNOPQRSTUVWXYZ\[\]\^_`abcdefghijklmnopqrstuvwxyz\{\|\}\\\~\t"
 CACHE = os.path.normpath(
@@ -39,51 +41,51 @@ CACHE = os.path.normpath(
 )
 
 
-def feature_amount_of_ascii_strings(filepath: str) -> int:
+async def feature_amount_of_ascii_strings(filepath: str) -> int:
     with open(filepath, "rb") as fh:
         ascii_re = re.compile(rb"([%s]{%d,})" % (ASCII_BYTE, 5))
         return sum(1 for _ in re.finditer(ascii_re, fh.read()))
 
 
-def feature_amount_of_unicode_strings(filepath: str) -> int:
+async def feature_amount_of_unicode_strings(filepath: str) -> int:
     with open(filepath, "rb") as fh:
         unicode_re = re.compile(b"((?:[%s]\x00){%d,})" % (ASCII_BYTE, 5))
         return sum(1 for _ in re.finditer(unicode_re, fh.read()))
 
 
-def feature_amount_of_exports(filepath: str):
+async def feature_amount_of_exports(filepath: str):
     return len(get_exports(filepath) or [])
 
 
-def feature_amount_of_imports(filepath: str) -> int:
+async def feature_amount_of_imports(filepath: str) -> int:
     return len(get_imports(filepath) or [])
 
 
-def feature_amount_of_distinct_import_modules(filepath: str) -> int:
+async def feature_amount_of_distinct_import_modules(filepath: str) -> int:
     if (imports := get_imports(filepath)) is None:
         return 0
 
     return len(set([module for module, _, _ in imports]))
 
 
-def feature_amount_of_sections(filepath: str) -> int:
+async def feature_amount_of_sections(filepath: str) -> int:
     return len(get_sections(filepath) or [])
 
 
-def feature_has_non_zero_checksum(filepath: str) -> int:
+async def feature_has_zero_checksum(filepath: str) -> int:
     hdr = get_header_infos(filepath)
-    has_non_zero_checksum = hasattr(hdr, "CheckSum")
-    if has_non_zero_checksum:
-        has_non_zero_checksum = has_non_zero_checksum != 0
+    has_checksum = hasattr(hdr, "CheckSum")
+    if has_checksum:
+        return int(hdr["CheckSum"] == 0)
 
-    return int(has_non_zero_checksum)
+    return 0
 
 
-def feature_amount_of_resources(filepath: str) -> int:
+async def feature_amount_of_resources(filepath: str) -> int:
     return len(get_resources(filepath) or [])
 
 
-def feature_amount_of_zero_stamps(filepath: str) -> int:
+async def feature_amount_of_zero_stamps(filepath: str) -> int:
     if (stamps := get_stamps(filepath)) is None:
         return 0
 
@@ -95,72 +97,241 @@ def feature_amount_of_zero_stamps(filepath: str) -> int:
     return amount
 
 
-def feature_get_shannon_entropy(filepath: str) -> int:
+async def feature_get_shannon_entropy(filepath: str) -> int:
     with open(filepath, "rb") as fh:
         data = fh.read()
         return get_entropy(data, "shannon")
 
 
-def feature_has_packer(filepath: str) -> int:
+async def feature_has_packer(filepath: str) -> int:
     return int(not not get_packers(filepath))
 
 
-def feature_has_authenticode(filepath: str) -> int:
+async def feature_has_authenticode(filepath: str) -> int:
     if (binary := get_lief_binary(filepath)) is None:
         return int(False)
 
     return int(has_authenticode(binary))
 
 
-def feature_has_debug_infos(filepath: str) -> int:
+async def feature_has_debug_infos(filepath: str) -> int:
     guid, filepath = get_debug_infos(filepath)
     return int(guid is not None or filepath is not None)
 
 
-def feature_has_rich_header(filepath: str) -> int:
+async def feature_has_rich_header(filepath: str) -> int:
     return int(get_rich_header(filepath) is not None)
 
 
-def feature_get_subsystem(filepath: str):
+async def feature_has_native_subsystem(filepath: str) -> int:
     ss_id, _ = get_subsystem(filepath)
-    # return int(ss_id or 0)
-    return {
-        # "subsystem_is_unknown": int(ss_id == 0),
-        "subsystem_is_native": int(ss_id == 1),
-        "subsystem_is_gui": int(ss_id == 2),
-        "subsystem_is_cui": int(ss_id == 3),
-    }
+    return int(ss_id == 1)
+
+
+async def feature_has_gui_subsystem(filepath: str) -> int:
+    ss_id, _ = get_subsystem(filepath)
+    return int(ss_id == 2)
+
+
+async def feature_has_cui_subsystem(filepath: str) -> int:
+    ss_id, _ = get_subsystem(filepath)
+    return int(ss_id == 3)
+
+
+async def feature_has_non_executable_entrypoint(filepath: str) -> int:
+    """Entrypoint in a non executable section"""
+    sections = get_sections(filepath)
+    entrypoint = get_header_infos(filepath)["AddressOfEntryPoint"]
+    optional_header = get_optional_header(filepath)
+    for _name, va, _rs, vs, char, _ent in sections:
+        start = optional_header.ImageBase + va
+        if start < entrypoint < start + vs:
+            if not (char & 0x20000000):
+                return int(True)
+
+    return int(False)
+
+
+async def feature_has_entrypoint_in_last_section(filepath: str) -> int:
+    sections = get_sections(filepath)
+    entrypoint = get_header_infos(filepath)["AddressOfEntryPoint"]
+    optional_header = get_optional_header(filepath)
+    _name, va, _rs, vs, char, _ent = sections[-1]
+    start = optional_header.ImageBase + va
+    return int(start < entrypoint < start + vs)
+
+
+async def feature_has_entrypoint_outside_the_file(filepath: str) -> int:
+    entrypoint = get_header_infos(filepath)["AddressOfEntryPoint"]
+    optional_header = get_optional_header(filepath)
+    return int(
+        any(
+            [
+                entrypoint < optional_header.ImageBase,
+                entrypoint
+                > optional_header.ImageBase
+                + optional_header.SizeOfImage,  # get_header_infos()["SizeOfImage"]
+            ]
+        )
+    )
+
+
+async def feature_has_zero_entrypoint(filepath: str) -> int:
+    return int(get_header_infos(filepath)["AddressOfEntryPoint"] == 0)
+
+
+async def feature_has_suspicious_resources_size(filepath: str) -> int:
+    pe = lief.PE.parse(filepath)
+    rsrc_directory = pe.data_directory(lief.PE.DATA_DIRECTORY.RESOURCE_TABLE)
+    if not rsrc_directory.has_section:
+        return int(False)
+
+    return int(
+        0.0
+        <= rsrc_directory.section.size / pe.optional_header.sizeof_image
+        <= 0.75
+    )
+
+
+async def feature_has_resources(filepath: str) -> int:
+    resources = get_resources(filepath)
+    return int(resources is None or resources == [])
+
+
+async def feature_has_suspicious_SizeOfImage(filepath: str) -> int:
+    size = get_header_infos(filepath)["SizeOfImage"]
+    return int(size < 0x1000 or 0xA00000 < size)
+
+
+async def feature_has_suspicious_size_of_optional_hdr(filepath: str) -> int:
+    optional_header_size = get_size_of_optional_header(filepath)
+    # pe studio allows the 0xe0 - 0x104 range
+    return not any(
+        [
+            optional_header_size == 0xE0,  # PE32
+            optional_header_size == 0xF0,  # PE32+
+        ]
+    )
+
+
+async def feature_has_suspicious_number_of_imports(filepath: str) -> int:
+    n = len(get_imports(filepath) or [])
+    return int(n < 10 or 500 < n)
+
+
+async def feature_has_cfg(filepath: str) -> int:
+    pe = lief.PE.parse(filepath)
+    return int(pe.optional_header.has(lief.PE.DLL_CHARACTERISTICS.GUARD_CF))
+
+
+async def feature_has_dep(filepath: str) -> int:
+    pe = lief.PE.parse(filepath)
+    return int(pe.optional_header.has(lief.PE.DLL_CHARACTERISTICS.NX_COMPAT))
+
+
+async def feature_has_aslr(filepath: str) -> int:
+    pe = lief.PE.parse(filepath)
+    return int(
+        pe.optional_header.has(lief.PE.DLL_CHARACTERISTICS.DYNAMIC_BASE)
+    )
+
+
+async def feature_is_wdm(filepath: str) -> int:
+    pe = lief.PE.parse(filepath)
+    return int(pe.optional_header.has(lief.PE.DLL_CHARACTERISTICS.WDM_DRIVER))
 
 
 #####################
+#####################
+#####################
+
+import asyncio
+
+import uvloop
 
 
-def handle_file(filepath: str) -> T.Dict[str, int]:
-    return {
-        "amount_of_exports": feature_amount_of_exports(filepath),
-        "amount_of_imports": feature_amount_of_imports(filepath),
-        "amount_of_distinct_import_modules": feature_amount_of_distinct_import_modules(
-            filepath
-        ),
-        "amount_of_sections": feature_amount_of_sections(filepath),
-        "amount_of_resources": feature_amount_of_resources(filepath),
-        "amount_of_zero_stamps": feature_amount_of_zero_stamps(filepath),
-        "amount_of_ascii_strings": feature_amount_of_ascii_strings(filepath),
-        "amount_of_unicode_strings": feature_amount_of_unicode_strings(
-            filepath
-        ),
-        # "has_non_zero_checksum": feature_has_non_zero_checksum(filepath),
-        "has_packer": feature_has_packer(filepath),
-        "has_authenticode": feature_has_authenticode(filepath),
-        "has_debug_infos": feature_has_debug_infos(filepath),
-        "has_rich_header": feature_has_rich_header(filepath),
-        "shannon_entropy": feature_get_shannon_entropy(filepath),
-        **feature_get_subsystem(filepath),
-        # "amount_of_stamps": len(stamps.values()) if stamps else 0,
+async def collect_features(feature_extractors, filepath):
+    tasks = []
+    for k, v in feature_extractors.items():
+        tasks.append(asyncio.create_task(v(filepath)))
+
+    feature_values = await asyncio.gather(*tasks)
+    return dict(zip(feature_extractors.keys(), feature_values))
+
+
+def as_sync(fn, *args, **kwargs):
+    res = fn(*args, **kwargs)
+    if asyncio.iscoroutine(res):
+        return asyncio.get_event_loop().run_until_complete(res)
+
+    return res
+
+
+def handle_file(filepath: str, method: str = "asyncio") -> T.Dict[str, int]:
+    feature_extractors = {
+        # "amount_of_exports": feature_amount_of_exports,
+        # "amount_of_imports": feature_amount_of_imports,
+        # "amount_of_distinct_import_modules": feature_amount_of_distinct_import_modules,
+        # "amount_of_sections": feature_amount_of_sections,
+        # "amount_of_resources": feature_amount_of_resources,
+        # "amount_of_zero_stamps": feature_amount_of_zero_stamps,
+        # "amount_of_ascii_strings": feature_amount_of_ascii_strings,
+        # "amount_of_unicode_strings": feature_amount_of_unicode_strings,
+        # "has_zero_checksum": feature_has_zero_checksum,
+        # "has_packer": feature_has_packer,
+        # "has_authenticode": feature_has_authenticode,
+        # "has_debug_infos": feature_has_debug_infos,
+        # "has_rich_header": feature_has_rich_header,
+        # "shannon_entropy": feature_get_shannon_entropy,
+        # "has_native_subsystem": feature_has_native_subsystem,
+        # "has_gui_subsystem": feature_has_gui_subsystem,
+        # "has_cui_subsystem": feature_has_cui_subsystem,
+        # "has_suspicious_number_of_imports": feature_has_suspicious_number_of_imports,
+        # "has_suspicious_SizeOfImage": feature_has_suspicious_SizeOfImage,
+        "has_suspicious_size_of_optional_hdr": feature_has_suspicious_size_of_optional_hdr,
+        # "has_non_executable_entrypoint": feature_has_non_executable_entrypoint,
+        # "has_entrypoint_in_last_section": feature_has_entrypoint_in_last_section,
+        # "has_entrypoint_outside_the_file": feature_has_entrypoint_outside_the_file,
+        "has_zero_entrypoint": feature_has_zero_entrypoint,
+        "has_suspicious_resources_size": feature_has_suspicious_resources_size,
+        "has_resources": feature_has_resources,
+        "has_cfg": feature_has_cfg,
+        "has_dep": feature_has_dep,
+        "has_aslr": feature_has_aslr,
+        "is_wdm": feature_is_wdm,
     }
+    if method == "asyncio":
+        if sys.version_info >= (3, 11):
+            with asyncio.Runner(loop_factory=uvloop.new_event_loop) as runner:
+                return runner.run(
+                    collect_features(feature_extractors, filepath)
+                )
+        else:
+            uvloop.install()
+            return asyncio.run(collect_features(feature_extractors, filepath))
+
+    elif method == "multiprocessing":
+        from joblib import Parallel, delayed
+
+        feature_values = Parallel(n_jobs=-1)(
+            delayed(as_sync)(v, filepath) for v in feature_extractors.values()
+        )
+        return dict(zip(feature_extractors.keys(), feature_values))
+
+
+def yield_filepath(dirpath):
+    filenames = os.listdir(dirpath)
+    for idx, filename in enumerate(filenames):
+        filepath = os.path.join(dirpath, filename)
+        yield filepath
+
+
+import time
 
 
 def handle_dir(dirpath: str) -> str:
+    dir_start_time = time.time()
+
     feature_values = []
     feature_names = []
     filenames = os.listdir(dirpath)
@@ -168,12 +339,18 @@ def handle_dir(dirpath: str) -> str:
     for idx, filename in enumerate(filenames):
         filepath = os.path.join(dirpath, filename)
         print(
-            f"[{idx + 1}/{filenames_length}] Handle {os.path.abspath(filepath)}"
+            f"[{idx + 1}/{filenames_length}] Handle {os.path.abspath(filepath)}",
+            end=" ",
         )
+        file_start_time = time.time()
         features = handle_file(filepath)
+        print(f"({round((time.time() - file_start_time), 3)} seconds)")
         feature_values.append(list(features.values()))
         feature_names = list(features.keys())
 
+    print(
+        f"{dirpath} handled in {round((time.time() - dir_start_time), 3)} seconds"
+    )
     return feature_names, feature_values
 
 

@@ -1,6 +1,7 @@
 import itertools
 import typing as T
 
+import lief
 import pefile
 from _pe.packers import PACKER_SECTIONS
 from _pe.rich_header import KNOWN_PRODUCT_IDS, vs_version, vs_version_fallback
@@ -185,6 +186,39 @@ def get_resources(filepath: str) -> T.Optional[T.List[T.Any]]:
     return [
         resource(pe, entry) for entry in pe.DIRECTORY_ENTRY_RESOURCE.entries
     ]
+
+
+def get_resources_section(filepath):
+    if (pe := load_pe_file(filepath)) is None:
+        return None
+
+    pe.parse_data_directories(
+        directories=[pefile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_RESOURCE"]]
+    )
+    if not hasattr(pe, "DIRECTORY_ENTRY_RESOURCE"):
+        return None
+
+    res = pe.DIRECTORY_ENTRY_RESOURCE
+    return res
+
+
+def get_optional_header(filepath: str):
+    if (pe := load_pe_file(filepath)) is None:
+        return None
+
+    return pe.OPTIONAL_HEADER
+
+
+def get_size_of_optional_header(filepath: str) -> int:
+    """
+    Size of the OptionalHeader AND the data directories which follows this header.
+    This value is equivalent to: sizeof(pe_optional_header) + NB_DATA_DIR * sizeof(data_directory)
+    This size should be either:
+    * 0xE0 (224) for a PE32 (32 bits)
+    * 0xF0 (240) for a PE32+ (64 bits)
+    """
+    pe = lief.PE.parse(filepath)
+    return pe.header.sizeof_optional_header
 
 
 def get_header_infos(filepath: str):

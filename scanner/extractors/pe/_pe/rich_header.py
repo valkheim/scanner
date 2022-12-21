@@ -3,6 +3,7 @@
 # Also      https://github.com/hasherezade/bearparser/blob/master/parser/pe/RichHdrWrapper.cpp
 #           https://github.com/kirschju/richheader/blob/master/prodids.py
 # up to date list https://github.com/dishather/richprint/blob/master/comp_id.txt
+# also check the xml\rich-header.xml database of pe studio
 
 import os
 import typing as T

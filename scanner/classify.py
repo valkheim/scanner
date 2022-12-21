@@ -5,8 +5,9 @@ import typing as T
 
 import joblib
 import matplotlib.pyplot as plt
-import pandas
-import seaborn
+import numpy as np
+import pandas as pd
+import seaborn as sns
 from sklearn import metrics
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
@@ -177,20 +178,26 @@ def handle_dir(dirpath: str) -> str:
 
 
 def create_scatter_matrix(
-    feature_values,
-    feature_names,
-    benign_feature_values,
-    malware_feature_values,
+    outdir: str,
 ):
     print("Create scatter matrix")
-    df = pandas.DataFrame(feature_values, columns=feature_names)
+    benign_feature_values = joblib.load(
+        f"{outdir}/benign_feature_values.joblib"
+    )
+    malware_feature_values = joblib.load(
+        f"{outdir}/malware_feature_values.joblib"
+    )
+    feature_names = joblib.load(f"{outdir}/feature_names.joblib")
+    df = pd.DataFrame(
+        benign_feature_values + malware_feature_values, columns=feature_names
+    )
     for col in df:
         df[col] = df[col].astype(float)
 
     df["__type"] = ["Benign"] * len(benign_feature_values) + ["Malware"] * len(
         malware_feature_values
     )
-    seaborn.pairplot(
+    sns.pairplot(
         df,
         kind="scatter",
         hue="__type",
@@ -198,13 +205,36 @@ def create_scatter_matrix(
         corner=True,
         markers=["o", "D"],
     )
-    plt.savefig("cache/scatter_matrix.png")
+    plt.savefig(f"{outdir}/scatter_matrix.png")
     plt.clf()
     plt.cla()
 
 
+def create_correlation_matrix(outdir: str) -> None:
+    print("Create correlation matrix")
+    benign_feature_values = joblib.load(
+        f"{outdir}/benign_feature_values.joblib"
+    )
+    malware_feature_values = joblib.load(
+        f"{outdir}/malware_feature_values.joblib"
+    )
+    feature_names = joblib.load(f"{outdir}/feature_names.joblib")
+    df = pd.DataFrame(
+        benign_feature_values + malware_feature_values, columns=feature_names
+    )
+    correlation_matrix = df.corr()
+    # Generate a mask for the upper triangle
+    mask = np.triu(np.ones_like(correlation_matrix, dtype=bool))
+    plt.subplots(figsize=(11, 9))
+    sns.heatmap(correlation_matrix, annot=True, mask=mask, square=True)
+    plt.savefig(f"{outdir}/correlation_matrix.png", bbox_inches="tight")
+
+
 def save_feature_importance(
-    feature_names: T.List[str], importances: T.List[int], label: str
+    outdir: str,
+    feature_names: T.List[str],
+    importances: T.List[int],
+    label: str,
 ) -> None:
     print(f"Save '{label}' feature importance")
     plt.tight_layout()
@@ -216,18 +246,24 @@ def save_feature_importance(
 
     plt.xlabel("Feature importance")
     plt.ylabel("Features")
-    plt.savefig(f"cache/{label}_feature_importance.png", bbox_inches="tight")
+    plt.savefig(
+        f"{outdir}/{label}_feature_importance.png", bbox_inches="tight"
+    )
     plt.clf()
     plt.cla()
 
 
 def create_decision_tree(
-    feature_values, feature_names, data_class_distribution, class_names
+    outdir: str,
+    feature_values,
+    feature_names,
+    data_class_distribution,
+    class_names,
+    label,
 ) -> None:
-    label = "decision_tree"
     print("Create decision tree")
-    X = pandas.DataFrame(feature_values, columns=feature_names)
-    y = pandas.DataFrame(data_class_distribution, columns=["Binary type"])
+    X = pd.DataFrame(feature_values, columns=feature_names)
+    y = pd.DataFrame(data_class_distribution, columns=["Binary type"])
     classifier = DecisionTreeClassifier(
         criterion="gini",
         splitter="random",
@@ -240,88 +276,85 @@ def create_decision_tree(
     # The importance of a feature is computed as the (normalized) total reduction of the criterion brought by that feature.
     # It is also known as the Gini importance.
     importances = classifier.feature_importances_
-    save_feature_importance(feature_names, importances, label)
+    save_feature_importance(outdir, feature_names, importances, label)
     export_graphviz(
         classifier,
-        out_file=f"cache/{label}.dot",
+        out_file=f"{outdir}/{label}.dot",
         class_names=class_names,
         feature_names=feature_names,
         filled=True,
         rounded=True,
     )
-    os.system(f"dot cache/{label}.dot -Tpng -o cache/{label}.png")
+    os.system(f"dot {outdir}/{label}.dot -Tpng -o {outdir}/{label}.png")
     return classifier
 
 
 def create_random_forest(
-    feature_values, feature_names, data_class_distribution
+    outdir: str,
+    feature_values,
+    feature_names,
+    data_class_distribution,
+    label: str,
 ) -> None:
-    label = "random_forest"
     print("Create random forest")
-    X = pandas.DataFrame(feature_values, columns=feature_names)
-    y = pandas.DataFrame(data_class_distribution, columns=["Binary type"])
-
+    X = pd.DataFrame(feature_values, columns=feature_names)
+    y = pd.DataFrame(data_class_distribution, columns=["Binary type"])
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
     ((ntest, _), (ntrain, _)) = (X_test.shape, X_train.shape)
     print(f"Train samples: {ntrain}")
     print(f"Test  samples: {ntest}")
-    if not os.path.exists(f"{CACHE}/{label}.joblib"):
+    if not os.path.exists(f"{outdir}/{label}.joblib"):
         classifier = RandomForestClassifier(n_jobs=-1)
         classifier.fit(X_train, y_train.values.ravel())
-        joblib.dump(classifier, f"{CACHE}/{label}.joblib")
+        joblib.dump(classifier, f"{outdir}/{label}.joblib")
 
     else:
-        classifier = joblib.load(f"{CACHE}/{label}.joblib")
+        classifier = joblib.load(f"{outdir}/{label}.joblib")
 
     y_pred = classifier.predict(X_test)
     print("RF accuracy:", metrics.accuracy_score(y_test, y_pred))
     importances = classifier.feature_importances_
-    save_feature_importance(feature_names, importances, label)
+    save_feature_importance(outdir, feature_names, importances, label)
     return classifier
 
 
-def prepare_features(malware_dir: str, benign_dir: str, export: bool = False):
+def prepare_features(outdir: str, malware_dir: str, benign_dir: str):
     # Fetch malware features
-    if not os.path.exists(f"{CACHE}/malware_feature_values.joblib"):
+    if not os.path.exists(f"{outdir}/malware_feature_values.joblib"):
         feature_names, malware_feature_values = handle_dir(malware_dir)
         joblib.dump(
-            malware_feature_values, f"{CACHE}/malware_feature_values.joblib"
+            malware_feature_values, f"{outdir}/malware_feature_values.joblib"
         )
-        if not os.path.exists(f"{CACHE}/feature_names.joblib"):
-            joblib.dump(feature_names, f"{CACHE}/feature_names.joblib")
+        if not os.path.exists(f"{outdir}/feature_names.joblib"):
+            joblib.dump(feature_names, f"{outdir}/feature_names.joblib")
 
     else:
         malware_feature_values = joblib.load(
-            f"{CACHE}/malware_feature_values.joblib"
+            f"{outdir}/malware_feature_values.joblib"
         )
 
     # Fetch benign features
-    if not os.path.exists(f"{CACHE}/benign_feature_values.joblib"):
+    if not os.path.exists(f"{outdir}/benign_feature_values.joblib"):
         _, benign_feature_values = handle_dir(benign_dir)
         joblib.dump(
-            benign_feature_values, f"{CACHE}/benign_feature_values.joblib"
+            benign_feature_values, f"{outdir}/benign_feature_values.joblib"
         )
 
     else:
         benign_feature_values = joblib.load(
-            f"{CACHE}/benign_feature_values.joblib"
+            f"{outdir}/benign_feature_values.joblib"
         )
 
-    feature_names = joblib.load(f"{CACHE}/feature_names.joblib")
-    if export:
-        feature_values = benign_feature_values + malware_feature_values
-        create_scatter_matrix(
-            feature_values,
-            feature_names,
-            benign_feature_values,
-            malware_feature_values,
-        )
-
+    feature_names = joblib.load(f"{outdir}/feature_names.joblib")
     return feature_names, benign_feature_values, malware_feature_values
 
 
 def prepare_classifier(
-    feature_names, benign_feature_values, malware_feature_values
+    output_dir,
+    feature_names,
+    benign_feature_values,
+    malware_feature_values,
+    label: str = "random_forest",
 ):
     feature_values = benign_feature_values + malware_feature_values
     data_class_distribution = [0] * len(benign_feature_values) + [1] * len(
@@ -329,20 +362,41 @@ def prepare_classifier(
     )
 
     # Classify
-    # create_decision_tree(
-    #    feature_values, feature_names, data_class_distribution, ("benign", "malware",)
-    # )
-    return create_random_forest(
-        feature_values, feature_names, data_class_distribution
-    )
+    if label == "decision_tree":
+        return create_decision_tree(
+            output_dir,
+            feature_values,
+            feature_names,
+            data_class_distribution,
+            (
+                "benign",
+                "malware",
+            ),
+            label,
+        )
+
+    if label == "random_forest":
+        return create_random_forest(
+            output_dir,
+            feature_values,
+            feature_names,
+            data_class_distribution,
+            label,
+        )
 
 
-def predict(classifier, test):
+def predict(classifier, test, verbose: bool = False):
     features = handle_file(test)
-    print(features)
+    if verbose:
+        print(
+            pd.DataFrame(
+                features.items(), columns=["Feature", "Value"]
+            ).to_string()
+        )
+
     feature_values = [list(features.values())]
     feature_names = list(features.keys())
-    X = pandas.DataFrame(feature_values, columns=feature_names)
+    X = pd.DataFrame(feature_values, columns=feature_names)
     y = classifier.predict(X)
     classes = (
         "benign",
@@ -352,16 +406,39 @@ def predict(classifier, test):
 
 
 def run(args: argparse.Namespace) -> int:
-    if args.malwares_dir and args.benigns_dir:
+    if args.output_dir and args.malwares_dir and args.benigns_dir:
+        os.makedirs(args.output_dir, exist_ok=True)
         (
             feature_names,
             benign_feature_values,
             malware_feature_values,
-        ) = prepare_features(args.malwares_dir, args.benigns_dir, export=False)
-        classifier = prepare_classifier(
-            feature_names, benign_feature_values, malware_feature_values
+        ) = prepare_features(
+            args.output_dir, args.malwares_dir, args.benigns_dir
         )
-        if args.test:
-            predict(classifier, args.test)
+        prepare_classifier(
+            args.output_dir,
+            feature_names,
+            benign_feature_values,
+            malware_feature_values,
+        )
+
+    if args.output_dir and args.scatter_matrix:
+        create_scatter_matrix(args.output_dir)
+
+    if args.output_dir and args.correlation_matrix:
+        create_correlation_matrix(args.output_dir)
+
+    if args.classifier_path:
+        classifier = joblib.load(args.classifier_path)
+        if args.test_file:
+            predict(classifier, args.test_file, verbose=True)
+
+        if args.test_dir:
+            for filename in os.listdir(args.test_dir):
+                filepath = os.path.join(args.test_dir, filename)
+                if not os.path.isfile(filepath):
+                    continue
+
+                predict(classifier, filepath)
 
     return 0

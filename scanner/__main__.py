@@ -23,10 +23,15 @@ def get_arguments() -> argparse.Namespace:
 
     cli_parser = subs.add_parser("classify")
     cli_parser.set_defaults(run=scanner.classify.run)
+    cli_parser.add_argument("--output_dir")
     cli_parser.add_argument("--malwares_dir")
     cli_parser.add_argument("--benigns_dir")
+    cli_parser.add_argument("--scatter_matrix", action="store_true")
+    cli_parser.add_argument("--correlation_matrix", action="store_true")
 
-    cli_parser.add_argument("--test")
+    cli_parser.add_argument("--classifier_path")
+    cli_parser.add_argument("--test_file")
+    cli_parser.add_argument("--test_dir")
 
     return parser.parse_args()
 

@@ -218,6 +218,9 @@ def get_size_of_optional_header(filepath: str) -> int:
     * 0xF0 (240) for a PE32+ (64 bits)
     """
     pe = lief.PE.parse(filepath)
+    if not hasattr(pe, "header"):
+        return 0
+
     return pe.header.sizeof_optional_header
 
 

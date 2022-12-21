@@ -1,6 +1,9 @@
 import argparse
+import asyncio
+import datetime
 import os
 import sys
+import time
 import typing as T
 
 import joblib
@@ -9,6 +12,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import uvloop
+from joblib import Parallel, delayed
 from sklearn import metrics
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
@@ -141,7 +146,11 @@ async def feature_has_cui_subsystem(filepath: str) -> int:
 async def feature_has_non_executable_entrypoint(filepath: str) -> int:
     """Entrypoint in a non executable section"""
     sections = get_sections(filepath)
-    entrypoint = get_header_infos(filepath)["AddressOfEntryPoint"]
+    header = get_header_infos(filepath)
+    if header is None or not hasattr(header, "AddressOfEntryPoint"):
+        return int(False)
+
+    entrypoint = header["AddressOfEntryPoint"]
     optional_header = get_optional_header(filepath)
     for _name, va, _rs, vs, char, _ent in sections:
         start = optional_header.ImageBase + va
@@ -153,8 +162,17 @@ async def feature_has_non_executable_entrypoint(filepath: str) -> int:
 
 
 async def feature_has_entrypoint_in_last_section(filepath: str) -> int:
-    sections = get_sections(filepath)
-    entrypoint = get_header_infos(filepath)["AddressOfEntryPoint"]
+    if (sections := get_sections(filepath)) is None:
+        return int(False)
+
+    if sections == []:
+        return int(False)
+
+    header = get_header_infos(filepath)
+    if header is None or not hasattr(header, "AddressOfEntryPoint"):
+        return int(False)
+
+    entrypoint = header["AddressOfEntryPoint"]
     optional_header = get_optional_header(filepath)
     _name, va, _rs, vs, char, _ent = sections[-1]
     start = optional_header.ImageBase + va
@@ -162,7 +180,11 @@ async def feature_has_entrypoint_in_last_section(filepath: str) -> int:
 
 
 async def feature_has_entrypoint_outside_the_file(filepath: str) -> int:
-    entrypoint = get_header_infos(filepath)["AddressOfEntryPoint"]
+    header = get_header_infos(filepath)
+    if header is None or not hasattr(header, "AddressOfEntryPoint"):
+        return int(False)
+
+    entrypoint = header["AddressOfEntryPoint"]
     optional_header = get_optional_header(filepath)
     return int(
         any(
@@ -177,11 +199,20 @@ async def feature_has_entrypoint_outside_the_file(filepath: str) -> int:
 
 
 async def feature_has_zero_entrypoint(filepath: str) -> int:
-    return int(get_header_infos(filepath)["AddressOfEntryPoint"] == 0)
+    if (header := get_header_infos(filepath)) is None:
+        return int(False)
+
+    if header is None or not hasattr(header, "AddressOfEntryPoint"):
+        return int(False)
+
+    entrypoint = header["AddressOfEntryPoint"]
+    return int(entrypoint == 0)
 
 
 async def feature_has_suspicious_resources_size(filepath: str) -> int:
-    pe = lief.PE.parse(filepath)
+    if (pe := lief.PE.parse(filepath)) is None:
+        return int(False)
+
     rsrc_directory = pe.data_directory(lief.PE.DATA_DIRECTORY.RESOURCE_TABLE)
     if not rsrc_directory.has_section:
         return int(False)
@@ -195,11 +226,15 @@ async def feature_has_suspicious_resources_size(filepath: str) -> int:
 
 async def feature_has_resources(filepath: str) -> int:
     resources = get_resources(filepath)
-    return int(resources is None or resources == [])
+    return int(resources is not None and resources != [])
 
 
 async def feature_has_suspicious_SizeOfImage(filepath: str) -> int:
-    size = get_header_infos(filepath)["SizeOfImage"]
+    header = get_header_infos(filepath)
+    if header is None or not hasattr(header, "SizeOfImage"):
+        return int(False)
+
+    size = header["SizeOfImage"]
     return int(size < 0x1000 or 0xA00000 < size)
 
 
@@ -220,34 +255,473 @@ async def feature_has_suspicious_number_of_imports(filepath: str) -> int:
 
 
 async def feature_has_cfg(filepath: str) -> int:
-    pe = lief.PE.parse(filepath)
+    if (pe := lief.PE.parse(filepath)) is None:
+        return int(False)
+
     return int(pe.optional_header.has(lief.PE.DLL_CHARACTERISTICS.GUARD_CF))
 
 
 async def feature_has_dep(filepath: str) -> int:
-    pe = lief.PE.parse(filepath)
+    if (pe := lief.PE.parse(filepath)) is None:
+        return int(False)
+
     return int(pe.optional_header.has(lief.PE.DLL_CHARACTERISTICS.NX_COMPAT))
 
 
 async def feature_has_aslr(filepath: str) -> int:
-    pe = lief.PE.parse(filepath)
+    if (pe := lief.PE.parse(filepath)) is None:
+        return int(False)
+
     return int(
         pe.optional_header.has(lief.PE.DLL_CHARACTERISTICS.DYNAMIC_BASE)
     )
 
 
+async def feature_ignores_seh(filepath: str) -> int:
+    if (pe := lief.PE.parse(filepath)) is None:
+        return int(True)
+
+    return int(pe.optional_header.has(lief.PE.DLL_CHARACTERISTICS.NO_SEH))
+
+
+async def feature_ignores_gs(filepath: str) -> int:
+    """Ignores stack cookies"""
+    if (pe := lief.PE.parse(filepath)) is None:
+        return int(True)
+
+    if not pe.has_configuration:
+        return int(True)
+
+    return int(pe.load_configuration.security_cookie == 0)
+
+
+async def feature_ignores_ci(filepath: str) -> int:
+    """Ignores code integrity"""
+    if (pe := lief.PE.parse(filepath)) is None:
+        return int(True)
+
+    if not pe.has_configuration:
+        return int(True)
+
+    return int(isinstance(pe.load_configuration, lief.PE.LoadConfigurationV2))
+
+
+async def feature_has_suspicious_debug_timestamp(filepath: str) -> int:
+    if (pe := lief.PE.parse(filepath)) is None:
+        return int(False)
+
+    if not pe.has_debug:
+        return int(False)
+
+    for entry in pe.debug:
+        dbg_time = datetime.datetime.fromtimestamp(entry.timestamp)
+        if dbg_time >= datetime.datetime.now():
+            return int(True)
+
+    return int(False)
+
+
 async def feature_is_wdm(filepath: str) -> int:
-    pe = lief.PE.parse(filepath)
+    if (pe := lief.PE.parse(filepath)) is None:
+        return int(False)
+
     return int(pe.optional_header.has(lief.PE.DLL_CHARACTERISTICS.WDM_DRIVER))
 
 
-#####################
-#####################
-#####################
+async def feature_amount_of_high_entropy_sections(filepath: str) -> int:
+    if (sections := get_sections(filepath)) is None:
+        return 0
 
-import asyncio
+    acc: int = 0
+    for _name, _va, _rs, _vs, _char, ent in sections:
+        if 0 < ent < 7:
+            acc += 1
 
-import uvloop
+    return acc
+
+
+async def feature_amount_of_shared_sections(filepath: str) -> int:
+    if (pe := lief.PE.parse(filepath)) is None:
+        return 0
+
+    found = 0
+    for section in pe.sections:
+        if section.has_characteristic(
+            lief.PE.SECTION_CHARACTERISTICS.MEM_SHARED
+        ):
+            found += 1
+
+    return int(not 0 <= found <= 1)
+
+
+async def feature_has_first_section_writable(filepath: str) -> int:
+    if (pe := lief.PE.parse(filepath)) is None:
+        return int(False)
+
+    return int(
+        list(pe.sections)[0].has_characteristic(
+            lief.PE.SECTION_CHARACTERISTICS.MEM_WRITE
+        )
+    )
+
+
+async def feature_has_last_section_executable(filepath: str) -> int:
+    if (pe := lief.PE.parse(filepath)) is None:
+        return int(False)
+
+    return int(
+        list(pe.sections)[0].has_characteristic(
+            lief.PE.SECTION_CHARACTERISTICS.MEM_EXECUTE
+        )
+    )
+
+
+async def feature_has_many_executable_sections(filepath: str) -> int:
+    if (pe := lief.PE.parse(filepath)) is None:
+        return int(False)
+
+    i = 0
+    for section in pe.sections:
+        if section.has_characteristic(
+            lief.PE.SECTION_CHARACTERISTICS.MEM_EXECUTE
+        ):
+            i += 1
+
+        if i > 1:
+            return int(True)
+
+    return int(False)
+
+
+async def feature_has_wx_section(filepath: str) -> int:
+    if (pe := lief.PE.parse(filepath)) is None:
+        return int(False)
+
+    for section in pe.sections:
+        if section.has_characteristic(
+            lief.PE.SECTION_CHARACTERISTICS.MEM_EXECUTE
+        ) and section.has_characteristic(
+            lief.PE.SECTION_CHARACTERISTICS.MEM_WRITE
+        ):
+            return int(True)
+
+    return int(False)
+
+
+async def feature_has_suspicious_size_of_initialied_data(filepath: str) -> int:
+    if (pe := lief.PE.parse(filepath)) is None:
+        return int(False)
+
+    return int(0 < pe.optional_header.sizeof_initialized_data < 0x1927C0)
+
+
+async def feature_has_suspicious_imphash(filepath: str) -> int:
+    if (pe := lief.PE.parse(filepath)) is None:
+        return int(False)
+
+    imphash = lief.PE.get_imphash(pe).lower()
+    blacklist = (
+        # https://www.mandiant.com/resources/blog/tracking-malware-import-hashing
+        "2c26ec4a570a502ed3e8484295581989",  # GREENCAT
+        "b722c33458882a1ab65a13e99efe357e",  # GREENCAT
+        "2d24325daea16e770eb82fa6774d70f1",  # GREENCAT
+        "0d72b49ed68430225595cc1efb43ced9",  # GREENCAT
+        "959711e93a68941639fd8b7fba3ca28f",  # STARSYPOUND
+        "4cec0085b43f40b4743dc218c585f2ec",  # COOKIEBAG
+        "3b10d6b16f135c366fc8e88cba49bc6c",  # NEWSREELS
+        "4f0aca83dfe82b02bbecce448ce8be00",  # NEWSREELS
+        "ee22b62aa3a63b7c17316d219d555891",  # TABMSGSQL
+        "a1a42f57ff30983efda08b68fedd3cfc",  # WEBC2
+        "7276a74b59de5761801b35c672c9ccb4",  # WEBC2
+    )
+    return int(imphash in blacklist)
+
+
+async def feature_has_size_of_code_greater_than_size_of_code_sections(
+    filepath: str,
+) -> int:
+    if (pe := lief.PE.parse(filepath)) is None:
+        return int(False)
+
+    code_section_size = 0
+    for section in pe.sections:
+        if section.has_characteristic(
+            lief.PE.SECTION_CHARACTERISTICS.CNT_CODE
+        ):
+            code_section_size += section.size
+
+    return int(pe.optional_header.sizeof_code > code_section_size)
+
+
+async def feature_amount_of_suspicious_section_names(filepath: str) -> int:
+    if (pe := lief.PE.parse(filepath)) is None:
+        return 0
+
+    whitelist = [
+        ".text",
+        ".bss",
+        ".rdata",
+        ".data",
+        ".idata",
+        ".reloc",
+        ".rsrc",
+    ]
+    amount = 0
+    for section in pe.sections:
+        if section.name not in whitelist:
+            amount += 1
+
+    return amount
+
+
+async def feature_has_dos_stub(filepath: str) -> int:
+    if (pe := lief.PE.parse(filepath)) is None:
+        return int(False)
+
+    return int(len(pe.dos_stub) != 0)
+
+
+async def feature_amount_of_antidebug_functions(filepath: str) -> int:
+    watchlist = {
+        "kernel32.dll": {
+            "IsDebuggerPresent",
+            "RegisterApplicationRestart",
+            "RegisterApplicationRecoveryCallback",
+            "ApplicationRecoveryInProgress",
+            "ApplicationRecoveryFinished",
+            "GetThreadSelectorEntry",
+            "RtlCaptureStackBackTrace",
+            "RegisterEventSource",
+            "RegisterHotKey",
+            "FatalAppExit",
+            "ContinueDebugEvent",
+            "DebugActiveProcessStop",
+            "SetDebugErrorLevel",
+            "DebugActiveProcess",
+            "DebugBreak",
+            "FlushInstructionCache",
+            "CheckRemoteDebuggerPresent",
+            "RtlLookupFunctionEntry",
+            "OutputDebugString",
+            "RtlPcToFileHeader",
+        },
+        "shlwapi.dll": {
+            "OutputDebugStringWrap",
+        },
+        "loadperf.dll": {
+            "LoadPerfCounterTextStrings",
+            "UnloadPerfCounterTextStrings",
+        },
+        "ntdll.dll": {
+            "DbgUiConnectToDbg",
+            "DbgUiDebugActiveProcess",
+            "DbgPrint",
+            "DbgPrintEx",
+            "QueryTrace",
+            "EtwLogTraceEvent",
+            "EtwEventWrite",
+            "EtwEventEnabled",
+            "EtwEventRegister",
+            "EtwEventUnregister",
+            "EtwUnregisterTraceGuids",
+            "EtwRegisterTraceGuids",
+            "EtwGetTraceLoggerHandle",
+            "EtwGetTraceEnableLevel",
+            "EtwGetTraceEnableFlags",
+            "EtwTraceMessage",
+            "NtGetContextThread",
+            "WerReportSQMEvent",
+            "WerRegisterMemoryBlock",
+            "WerUnregisterMemoryBlock",
+        },
+        "advapi32.dll": {
+            "EventRegister",
+            "EventSetInformation",
+            "EventUnregister",
+            "EventWriteTransfer",
+            "ElfOpenEventLog",
+            "ElfReadEventLog",
+            "ElfReportEvent",
+            "ElfReportEventAndSource",
+            "BackupEventLog",
+            "ClearEventLog",
+            "CloseEventLog",
+            "DeregisterEventSource",
+            "GetEventLogInformation",
+            "GetNumberOfEventLogRecords",
+            "GetOldestEventLogRecord",
+            "NotifyChangeEventLog",
+            "OpenBackupEventLog",
+            "OpenEventLog",
+            "ReadEventLog",
+            "RegisterEventSource",
+            "ReportEvent",
+            "SaferRecordEventLogEntry",
+            "StartTrace",
+            "CloseTrace",
+            "ProcessTrace",
+            "FlushTrace",
+            "OpenTrace",
+            "QueryAllTraces",
+            "LockServiceDatabase",
+            "GetNumberOfEventLogRecords",
+            "GetOldestEventLogRecord",
+            "BackupEventLog",
+            "NotifyChangeEventLog",
+            "DeregisterEventSource",
+            "ReportEvent",
+            "GetTraceEnableLevel",
+        },
+        "psapi.dll": {
+            "EmptyWorkingSet",
+            "EnumDeviceDrivers",
+            "EnumPageFiles",
+            "GetMappedFileName",
+            "GetDeviceDriverBaseName",
+            "GetDeviceDriverBaseName",
+            "GetDeviceDriverFileName",
+            "GetMappedFileName",
+            "GetModuleInformation",
+            "GetPerformanceInfo",
+            "RtlImageNtHeader",
+            "RtlImageDirectoryEntryToData",
+        },
+        "mspdb80.dll": {
+            "PDBOpenValidate5",
+        },
+        "imagehlp.dll": {
+            "UpdateDebugInfoFileEx",
+            "CheckSumMappedFile",
+            "EnumerateLoadedModulesW64",
+            "ImageNtHeader",
+            "ImageRvaToVa",
+            "StackWalk64",
+            "SymCleanup",
+            "SymFromAddr",
+            "SymFunctionTableAccess64",
+            "SymGetModuleInfo64",
+            "SymGetModuleBase64",
+            "SymGetModuleInfoW64",
+            "SymGetOptions",
+            "SymGetSymFromName",
+            "SymInitialize",
+            "SymLoadModule64",
+            "SymRegisterCallback64",
+            "SymSetOptions",
+            "SymUnloadModule64",
+            "SymAddSourceStream",
+            "SymEnumSourceFileTokens",
+            "SymEnumSourceFiles",
+            "SymGetSourceFileFromToken",
+            "SymGetSourceFileToken",
+            "SymGetSourceVarFromToken",
+            "SymMatchString",
+            "SymRegisterCallbackW64",
+            "SymSetHomeDirectory",
+            "SymSrvGetFileIndexes",
+            "RemoveRelocations",
+            "BindImage",
+            "BindImageEx",
+            "CheckSumMappedFile",
+            "EnumerateLoadedModules64",
+            "EnumerateLoadedModules",
+            "EnumerateLoadedModulesEx",
+            "FindDebugInfoFile",
+            "FindDebugInfoFileEx",
+            "FindExecutableImage",
+            "FindExecutableImageEx",
+            "FindFileInPath",
+            "FindFileInSearchPath",
+            "GetImageConfigInformation",
+            "GetImageUnusedHeaderBytes",
+            "GetTimestampForLoadedLibrary",
+            "ImageAddCertificate",
+            "ImageDirectoryEntryToData",
+            "ImageDirectoryEntryToDataEx",
+            "ImageEnumerateCertificates",
+            "ImageGetCertificateData",
+            "ImageGetCertificateHeader",
+            "ImageGetDigestStream",
+            "ImageLoad",
+            "ImageRemoveCertificate",
+            "ImageRvaToSection",
+            "ImageUnload",
+            "ImagehlpApiVersion",
+            "ImagehlpApiVersionEx",
+            "MakeSureDirectoryPathExists",
+            "MapAndLoad",
+            "MapDebugInformation",
+            "MapFileAndCheckSum",
+            "ReBaseImage64",
+            "ReBaseImage",
+            "RemovePrivateCvSymbolic",
+            "RemovePrivateCvSymbolicEx",
+            "SearchTreeForFile",
+            "SetImageConfigInformation",
+            "SplitSymbols",
+            "StackWalk",
+            "SymEnumSym",
+            "TouchFileTimes",
+            "UnDecorateSymbolName",
+            "UnMapAndLoad",
+            "UnmapDebugInformation",
+            "UpdateDebugInfoFile",
+        },
+        "dbghelp.dll": {
+            "EnumDirTree",
+            "SymFromAddr",
+            "SymGetModuleBase64",
+            "SymFunctionTableAccess64",
+            "SymCleanup",
+            "StackWalk64",
+            "SymInitialize",
+            "SymFunctionTableAccess64",
+            "SymGetModuleBase64",
+            "StackWalk64",
+            "ImageNtHeader",
+            "SymUnloadModule64",
+            "SymLoadModule64",
+            "SymLoadModuleEx",
+            "SymGetOptions",
+            "SymSetOptions",
+            "MiniDumpWriteDump",
+            "SymGetSymFromName",
+            "SymFromAddr",
+            "SymCleanup",
+            "SymGetModuleInfoW64",
+            "SymRegisterCallback64",
+            "EnumerateLoadedModules",
+            "EnumerateLoadedModulesW64",
+            "SymInitialize",
+            "ImageDirectoryEntryToData",
+            "SymEnumSym",
+            "SymEnumerateSymbolsW",
+            "MapDebugInformation",
+            "SymEnumerateSymbols64",
+            "SymGetSymFromAddr64",
+            "SymGetSymFromName64",
+            "SymGetSymNext64",
+            "SymGetSymPrev64",
+            "UnMapDebugInformation",
+        },
+    }
+    if (imports := get_imports(filepath)) is None:
+        return 0
+
+    ret = 0
+    for dll, _, function in imports:
+        if dll.lower() not in watchlist:
+            continue
+
+        if function in watchlist[dll.lower()]:
+            ret += 1
+
+    return ret
+
+
+#####################
+#####################
+#####################
 
 
 async def collect_features(feature_extractors, filepath):
@@ -267,38 +741,56 @@ def as_sync(fn, *args, **kwargs):
     return res
 
 
-def handle_file(filepath: str, method: str = "asyncio") -> T.Dict[str, int]:
+def handle_file(
+    filepath: str, method: str = "multiprocessing"
+) -> T.Dict[str, int]:
     feature_extractors = {
-        # "amount_of_exports": feature_amount_of_exports,
-        # "amount_of_imports": feature_amount_of_imports,
-        # "amount_of_distinct_import_modules": feature_amount_of_distinct_import_modules,
-        # "amount_of_sections": feature_amount_of_sections,
-        # "amount_of_resources": feature_amount_of_resources,
-        # "amount_of_zero_stamps": feature_amount_of_zero_stamps,
-        # "amount_of_ascii_strings": feature_amount_of_ascii_strings,
-        # "amount_of_unicode_strings": feature_amount_of_unicode_strings,
-        # "has_zero_checksum": feature_has_zero_checksum,
-        # "has_packer": feature_has_packer,
-        # "has_authenticode": feature_has_authenticode,
-        # "has_debug_infos": feature_has_debug_infos,
-        # "has_rich_header": feature_has_rich_header,
-        # "shannon_entropy": feature_get_shannon_entropy,
-        # "has_native_subsystem": feature_has_native_subsystem,
-        # "has_gui_subsystem": feature_has_gui_subsystem,
-        # "has_cui_subsystem": feature_has_cui_subsystem,
-        # "has_suspicious_number_of_imports": feature_has_suspicious_number_of_imports,
-        # "has_suspicious_SizeOfImage": feature_has_suspicious_SizeOfImage,
-        "has_suspicious_size_of_optional_hdr": feature_has_suspicious_size_of_optional_hdr,
-        # "has_non_executable_entrypoint": feature_has_non_executable_entrypoint,
-        # "has_entrypoint_in_last_section": feature_has_entrypoint_in_last_section,
-        # "has_entrypoint_outside_the_file": feature_has_entrypoint_outside_the_file,
+        "amount_of_exports": feature_amount_of_exports,
+        "amount_of_imports": feature_amount_of_imports,
+        "amount_of_distinct_import_modules": feature_amount_of_distinct_import_modules,
+        "amount_of_sections": feature_amount_of_sections,
+        "amount_of_resources": feature_amount_of_resources,
+        "amount_of_zero_stamps": feature_amount_of_zero_stamps,
+        "amount_of_ascii_strings": feature_amount_of_ascii_strings,
+        "amount_of_unicode_strings": feature_amount_of_unicode_strings,
+        "has_zero_checksum": feature_has_zero_checksum,
+        "has_packer": feature_has_packer,
+        "has_authenticode": feature_has_authenticode,
+        "has_debug_infos": feature_has_debug_infos,
+        "has_rich_header": feature_has_rich_header,
+        "shannon_entropy": feature_get_shannon_entropy,
+        "has_native_subsystem": feature_has_native_subsystem,
+        "has_gui_subsystem": feature_has_gui_subsystem,
+        "has_cui_subsystem": feature_has_cui_subsystem,
+        "has_suspicious_number_of_imports": feature_has_suspicious_number_of_imports,
+        "has_suspicious_SizeOfImage": feature_has_suspicious_SizeOfImage,
+        "has_non_executable_entrypoint": feature_has_non_executable_entrypoint,
+        "has_entrypoint_in_last_section": feature_has_entrypoint_in_last_section,
+        "has_entrypoint_outside_the_file": feature_has_entrypoint_outside_the_file,
         "has_zero_entrypoint": feature_has_zero_entrypoint,
+        "has_suspicious_size_of_optional_hdr": feature_has_suspicious_size_of_optional_hdr,
         "has_suspicious_resources_size": feature_has_suspicious_resources_size,
         "has_resources": feature_has_resources,
         "has_cfg": feature_has_cfg,
         "has_dep": feature_has_dep,
         "has_aslr": feature_has_aslr,
+        "ignores_seh": feature_ignores_seh,
+        "ignores_gs": feature_ignores_gs,
+        "ignores_ci": feature_ignores_ci,
         "is_wdm": feature_is_wdm,
+        "has_suspicious_debug_timestamp": feature_has_suspicious_debug_timestamp,
+        "amount_of_high_entropy_sections": feature_amount_of_high_entropy_sections,
+        "amount_of_shared_sections": feature_amount_of_shared_sections,
+        "has_first_section_writable": feature_has_first_section_writable,
+        "has_last_section_executable": feature_has_last_section_executable,
+        "has_many_executable_sections": feature_has_many_executable_sections,
+        "has_wx_section": feature_has_wx_section,
+        "has_suspicious_size_of_initialied_data": feature_has_suspicious_size_of_initialied_data,
+        "has_suspicious_imphash": feature_has_suspicious_imphash,
+        "has_size_of_code_greater_than_size_of_code_sections": feature_has_size_of_code_greater_than_size_of_code_sections,
+        "amount_of_suspicious_section_names": feature_amount_of_suspicious_section_names,
+        "has_dos_stub": feature_has_dos_stub,
+        "amount_of_antidebug_functions": feature_amount_of_antidebug_functions,
     }
     if method == "asyncio":
         if sys.version_info >= (3, 11):
@@ -311,8 +803,6 @@ def handle_file(filepath: str, method: str = "asyncio") -> T.Dict[str, int]:
             return asyncio.run(collect_features(feature_extractors, filepath))
 
     elif method == "multiprocessing":
-        from joblib import Parallel, delayed
-
         feature_values = Parallel(n_jobs=-1)(
             delayed(as_sync)(v, filepath) for v in feature_extractors.values()
         )
@@ -326,9 +816,6 @@ def yield_filepath(dirpath):
         yield filepath
 
 
-import time
-
-
 def handle_dir(dirpath: str) -> str:
     dir_start_time = time.time()
 
@@ -338,6 +825,9 @@ def handle_dir(dirpath: str) -> str:
     filenames_length = len(filenames)
     for idx, filename in enumerate(filenames):
         filepath = os.path.join(dirpath, filename)
+        if os.path.isdir(filepath):
+            continue
+
         print(
             f"[{idx + 1}/{filenames_length}] Handle {os.path.abspath(filepath)}",
             end=" ",
@@ -583,6 +1073,10 @@ def predict(classifier, test, verbose: bool = False):
 
 
 def run(args: argparse.Namespace) -> int:
+    if args.dry:
+        features = handle_file(args.dry, "asyncio")
+        print(features)
+
     if args.output_dir and args.malwares_dir and args.benigns_dir:
         os.makedirs(args.output_dir, exist_ok=True)
         (

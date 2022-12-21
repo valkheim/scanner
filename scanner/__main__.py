@@ -33,6 +33,8 @@ def get_arguments() -> argparse.Namespace:
     cli_parser.add_argument("--test_file")
     cli_parser.add_argument("--test_dir")
 
+    cli_parser.add_argument("--dry")
+
     return parser.parse_args()
 
 

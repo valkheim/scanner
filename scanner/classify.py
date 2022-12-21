@@ -4,33 +4,38 @@ import sys
 import typing as T
 
 import joblib
+import matplotlib.pyplot as plt
 import pandas
 import seaborn
+from sklearn import metrics
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier, export_graphviz
 
 from scanner.extractors.entropy.entropy import get_entropy
-from scanner.extractors.pe.authenticode import get_lief_binary, has_authenticode
+from scanner.extractors.pe.authenticode import get_lief_binary  # noqa
+from scanner.extractors.pe.authenticode import has_authenticode  # noqa
 from scanner.extractors.pe.debug import get_debug_infos
 
 sys.path.append(
     os.path.join(os.path.dirname(__file__), "extractors", "pe")
 )  # noqa
-import collections
 import re
 
-from scanner.extractors.pe._pe import (  # noqa
-    get_exports,
-    get_header_infos,
-    get_imports,
-    get_packers,
-    get_resources,
-    get_rich_header,
-    get_sections,
-    get_stamps,
-    get_subsystem,
-)
+from scanner.extractors.pe._pe import get_exports  # noqa
+from scanner.extractors.pe._pe import get_header_infos  # noqa
+from scanner.extractors.pe._pe import get_imports  # noqa
+from scanner.extractors.pe._pe import get_packers  # noqa
+from scanner.extractors.pe._pe import get_resources  # noqa
+from scanner.extractors.pe._pe import get_rich_header  # noqa
+from scanner.extractors.pe._pe import get_sections  # noqa
+from scanner.extractors.pe._pe import get_stamps  # noqa
+from scanner.extractors.pe._pe import get_subsystem  # noqa
 
 ASCII_BYTE = rb" !\"#\$%&\'\(\)\*\+,-\./0123456789:;<=>\?@ABCDEFGHIJKLMNOPQRSTUVWXYZ\[\]\^_`abcdefghijklmnopqrstuvwxyz\{\|\}\\\~\t"
+CACHE = os.path.normpath(
+    os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "cache")
+)
 
 
 def feature_amount_of_ascii_strings(filepath: str) -> int:
@@ -119,7 +124,7 @@ def feature_get_subsystem(filepath: str):
     ss_id, _ = get_subsystem(filepath)
     # return int(ss_id or 0)
     return {
-        "subsystem_is_unknown": int(ss_id == 0),
+        # "subsystem_is_unknown": int(ss_id == 0),
         "subsystem_is_native": int(ss_id == 1),
         "subsystem_is_gui": int(ss_id == 2),
         "subsystem_is_cui": int(ss_id == 3),
@@ -143,7 +148,7 @@ def handle_file(filepath: str) -> T.Dict[str, int]:
         "amount_of_unicode_strings": feature_amount_of_unicode_strings(
             filepath
         ),
-        "has_non_zero_checksum": feature_has_non_zero_checksum(filepath),
+        # "has_non_zero_checksum": feature_has_non_zero_checksum(filepath),
         "has_packer": feature_has_packer(filepath),
         "has_authenticode": feature_has_authenticode(filepath),
         "has_debug_infos": feature_has_debug_infos(filepath),
@@ -185,7 +190,7 @@ def create_scatter_matrix(
     df["__type"] = ["Benign"] * len(benign_feature_values) + ["Malware"] * len(
         malware_feature_values
     )
-    scatter = seaborn.pairplot(
+    seaborn.pairplot(
         df,
         kind="scatter",
         hue="__type",
@@ -193,12 +198,33 @@ def create_scatter_matrix(
         corner=True,
         markers=["o", "D"],
     )
-    scatter.fig.savefig("cache/scatter.png")
+    plt.savefig("cache/scatter_matrix.png")
+    plt.clf()
+    plt.cla()
+
+
+def save_feature_importance(
+    feature_names: T.List[str], importances: T.List[int], label: str
+) -> None:
+    print(f"Save '{label}' feature importance")
+    plt.tight_layout()
+    bars = plt.barh(feature_names, importances)
+    for bar in bars:
+        width = bar.get_width()
+        label_y = bar.get_y() + bar.get_height() / 2
+        plt.text(width, label_y, s=f"{width}")
+
+    plt.xlabel("Feature importance")
+    plt.ylabel("Features")
+    plt.savefig(f"cache/{label}_feature_importance.png", bbox_inches="tight")
+    plt.clf()
+    plt.cla()
 
 
 def create_decision_tree(
     feature_values, feature_names, data_class_distribution, class_names
-):
+) -> None:
+    label = "decision_tree"
     print("Create decision tree")
     X = pandas.DataFrame(feature_values, columns=feature_names)
     y = pandas.DataFrame(data_class_distribution, columns=["Binary type"])
@@ -211,72 +237,131 @@ def create_decision_tree(
         max_features="log2",
     )
     classifier.fit(X.values, y)
+    # The importance of a feature is computed as the (normalized) total reduction of the criterion brought by that feature.
+    # It is also known as the Gini importance.
+    importances = classifier.feature_importances_
+    save_feature_importance(feature_names, importances, label)
     export_graphviz(
         classifier,
-        out_file="cache/classifier.dot",
+        out_file=f"cache/{label}.dot",
         class_names=class_names,
         feature_names=feature_names,
         filled=True,
         rounded=True,
     )
-    os.system("dot cache/classifier.dot -Tpng -o cache/classifier.png")
+    os.system(f"dot cache/{label}.dot -Tpng -o cache/{label}.png")
+    return classifier
 
 
-def run(args: argparse.Namespace) -> int:
+def create_random_forest(
+    feature_values, feature_names, data_class_distribution
+) -> None:
+    label = "random_forest"
+    print("Create random forest")
+    X = pandas.DataFrame(feature_values, columns=feature_names)
+    y = pandas.DataFrame(data_class_distribution, columns=["Binary type"])
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
+    ((ntest, _), (ntrain, _)) = (X_test.shape, X_train.shape)
+    print(f"Train samples: {ntrain}")
+    print(f"Test  samples: {ntest}")
+    if not os.path.exists(f"{CACHE}/{label}.joblib"):
+        classifier = RandomForestClassifier(n_jobs=-1)
+        classifier.fit(X_train, y_train.values.ravel())
+        joblib.dump(classifier, f"{CACHE}/{label}.joblib")
+
+    else:
+        classifier = joblib.load(f"{CACHE}/{label}.joblib")
+
+    y_pred = classifier.predict(X_test)
+    print("RF accuracy:", metrics.accuracy_score(y_test, y_pred))
+    importances = classifier.feature_importances_
+    save_feature_importance(feature_names, importances, label)
+    return classifier
+
+
+def prepare_features(malware_dir: str, benign_dir: str, export: bool = False):
     # Fetch malware features
-    if not os.path.exists("cache/malware_feature_values.joblib"):
-        feature_names, malware_feature_values = handle_dir(args.malwares_dir)
+    if not os.path.exists(f"{CACHE}/malware_feature_values.joblib"):
+        feature_names, malware_feature_values = handle_dir(malware_dir)
         joblib.dump(
-            malware_feature_values, "cache/malware_feature_values.joblib"
+            malware_feature_values, f"{CACHE}/malware_feature_values.joblib"
         )
-        if not os.path.exists("cache/feature_names.joblib"):
-            joblib.dump(feature_names, "cache/feature_names.joblib")
+        if not os.path.exists(f"{CACHE}/feature_names.joblib"):
+            joblib.dump(feature_names, f"{CACHE}/feature_names.joblib")
 
     else:
         malware_feature_values = joblib.load(
-            "cache/malware_feature_values.joblib"
+            f"{CACHE}/malware_feature_values.joblib"
         )
 
     # Fetch benign features
-    if not os.path.exists("cache/benign_feature_values.joblib"):
-        _, benign_feature_values = handle_dir(args.benigns_dir)
+    if not os.path.exists(f"{CACHE}/benign_feature_values.joblib"):
+        _, benign_feature_values = handle_dir(benign_dir)
         joblib.dump(
-            benign_feature_values, "cache/benign_feature_values.joblib"
+            benign_feature_values, f"{CACHE}/benign_feature_values.joblib"
         )
 
     else:
         benign_feature_values = joblib.load(
-            "cache/benign_feature_values.joblib"
+            f"{CACHE}/benign_feature_values.joblib"
         )
 
-    # Prepare datasets
-    class_names = (
-        "benign",
-        "malware",
-    )
-    feature_names = joblib.load("cache/feature_names.joblib")
+    feature_names = joblib.load(f"{CACHE}/feature_names.joblib")
+    if export:
+        feature_values = benign_feature_values + malware_feature_values
+        create_scatter_matrix(
+            feature_values,
+            feature_names,
+            benign_feature_values,
+            malware_feature_values,
+        )
+
+    return feature_names, benign_feature_values, malware_feature_values
+
+
+def prepare_classifier(
+    feature_names, benign_feature_values, malware_feature_values
+):
     feature_values = benign_feature_values + malware_feature_values
     data_class_distribution = [0] * len(benign_feature_values) + [1] * len(
         malware_feature_values
     )
 
-    # Visualize feature
-    # create_scatter_matrix(feature_values, feature_names, benign_feature_values, malware_feature_values)
-    from sklearn.linear_model import LinearRegression
-
-    X = pandas.DataFrame(feature_values, columns=feature_names)
-    y = pandas.DataFrame(data_class_distribution, columns=["Binary type"])
-    model = LinearRegression()
-    model.fit(X, y)
-    importance = model.coef_
-    print(importance)
-    # summarize feature importance
-    for i, v in enumerate(importance):
-        print("Feature: %0d, Score: %.5f" % (i, v))
-
     # Classify
     # create_decision_tree(
-    #    feature_values, feature_names, data_class_distribution, class_names
+    #    feature_values, feature_names, data_class_distribution, ("benign", "malware",)
     # )
+    return create_random_forest(
+        feature_values, feature_names, data_class_distribution
+    )
+
+
+def predict(classifier, test):
+    features = handle_file(test)
+    print(features)
+    feature_values = [list(features.values())]
+    feature_names = list(features.keys())
+    X = pandas.DataFrame(feature_values, columns=feature_names)
+    y = classifier.predict(X)
+    classes = (
+        "benign",
+        "malware",
+    )
+    print(f"{test} is {classes[y[0]]}")
+
+
+def run(args: argparse.Namespace) -> int:
+    if args.malwares_dir and args.benigns_dir:
+        (
+            feature_names,
+            benign_feature_values,
+            malware_feature_values,
+        ) = prepare_features(args.malwares_dir, args.benigns_dir, export=False)
+        classifier = prepare_classifier(
+            feature_names, benign_feature_values, malware_feature_values
+        )
+        if args.test:
+            predict(classifier, args.test)
 
     return 0

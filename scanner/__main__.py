@@ -26,6 +26,8 @@ def get_arguments() -> argparse.Namespace:
     cli_parser.add_argument("--malwares_dir")
     cli_parser.add_argument("--benigns_dir")
 
+    cli_parser.add_argument("--test")
+
     return parser.parse_args()
 
 

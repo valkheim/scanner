@@ -1,8 +1,17 @@
-* https://github.com/KuechA/pestudio-cli/blob/638b2a720e4927c214a5e2b52104d35bd7b203f9/PeAnalyzer.py#L34
 * add stdout/ with files (e.g. entropy per section)
 * create db schema from stdout files
 * local analyzer (e.g. entropy >= 7.6)
 * global analyzer
 
-* get imports hash get_imphash
-* waiting gifs
+
+features:
+* string recognition
+  - blacklist (e.g. cmd.exe)
+  - user agent
+  - powershell encoding arguments, etc
+  - ip addresses
+  - unusual port numbers
+
+* cryptography recognition
+  - hardcoded values
+  - functions

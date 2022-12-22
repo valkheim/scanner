@@ -3757,8 +3757,8 @@ SUSPICIOUS_MODULES = [
     "Au3Zip.dll",
 ]
 
+# https://www.mandiant.com/resources/blog/tracking-malware-import-hashing
 SUSPICIOUS_IMPHASHES = [
-    # https://www.mandiant.com/resources/blog/tracking-malware-import-hashing
     "2c26ec4a570a502ed3e8484295581989",  # GREENCAT
     "b722c33458882a1ab65a13e99efe357e",  # GREENCAT
     "2d24325daea16e770eb82fa6774d70f1",  # GREENCAT
@@ -3771,3 +3771,185 @@ SUSPICIOUS_IMPHASHES = [
     "a1a42f57ff30983efda08b68fedd3cfc",  # WEBC2
     "7276a74b59de5761801b35c672c9ccb4",  # WEBC2
 ]
+
+# https://github.com/avast/retdec/blob/071852bbc9619342ce2409ce3241124526a3f0a0/src/fileformat/file_format/pe/pe_format.cpp#L243
+# http://www.hexacorn.com/blog/2016/12/15/pe-section-names-re-visited/
+WHITELIST_SECTION_NAMES = [
+    ".00cfg",
+    ".BSS",
+    ".CLR_UEF",
+    ".CRT",
+    ".DATA",
+    ".apiset",
+    ".arch",
+    ".autoload_text",
+    ".bindat",
+    ".bootdat",
+    ".bss",
+    ".buildid",
+    ".code",
+    ".complua",
+    ".cormeta",
+    ".cygwin_dll_common",
+    ".data",
+    ".data1",
+    ".data2",
+    ".data3",
+    ".debug  $F",
+    ".debug  $P",
+    ".debug  $S",
+    ".debug  $T",
+    ".debug",
+    ".didat",
+    ".didata",
+    ".drectve ",
+    ".edata",
+    ".eh_fram",
+    ".export",
+    ".fasm",
+    ".flat",
+    ".gfids",
+    ".giats",
+    ".gljmp",
+    ".glue_7",
+    ".glue_7t",
+    ".idata",
+    ".idlsym",
+    ".impdata",
+    ".import",
+    ".itext",
+    ".ndata",
+    ".orpc",
+    ".pdata",
+    ".rdata",
+    ".reloc",
+    ".rodata",
+    ".rsrc",
+    ".sbss",
+    ".script",
+    ".sdata",
+    ".shared",
+    ".srdata",
+    ".stab",
+    ".stabstr",
+    ".sxdata",
+    ".text",
+    ".text0",
+    ".text1",
+    ".text2",
+    ".text3",
+    ".textbss",
+    ".tls",
+    ".tls$",
+    ".udata",
+    ".vsdata",
+    ".wixburn",
+    ".wpp_sf",
+    ".xdata",
+    "BSS",
+    "CODE",
+    "DATA",
+    "DGROUP",
+    "INIT",
+    "PAGE",
+    "Shared",
+    "edata",
+    "idata",
+    "minATL",
+    "rdata",
+    "sdata",
+    "shared",
+    "testdata",
+    "text",
+    # m0ar
+    ".rossym",
+]
+
+# https://github.com/avast/pelib/blob/9ce2427424a4bd5716310ff3eef881dbc2915ff8/include/pelib/PeLibAux.h#L259
+PELIB_IMAGE_SCN_CNT_CODE = 0x00000020
+PELIB_IMAGE_SCN_CNT_INITIALIZED_DATA = 0x00000040
+PELIB_IMAGE_SCN_CNT_UNINITIALIZED_DATA = 0x00000080
+PELIB_IMAGE_SCN_LNK_INFO = 0x00000200
+PELIB_IMAGE_SCN_MEM_DISCARDABLE = 0x02000000
+PELIB_IMAGE_SCN_MEM_EXECUTE = 0x20000000
+PELIB_IMAGE_SCN_MEM_READ = 0x40000000
+PELIB_IMAGE_SCN_MEM_WRITE = 0x80000000
+
+# https://github.com/avast/retdec/blob/071852bbc9619342ce2409ce3241124526a3f0a0/src/fileformat/file_format/pe/pe_format.cpp#L430
+USUSAL_SECTION_CHARACTERISTICS = {
+    ".bss": (
+        PELIB_IMAGE_SCN_CNT_UNINITIALIZED_DATA
+        | PELIB_IMAGE_SCN_MEM_READ
+        | PELIB_IMAGE_SCN_MEM_WRITE
+    ),
+    ".cormeta": PELIB_IMAGE_SCN_LNK_INFO,
+    ".data": (
+        PELIB_IMAGE_SCN_CNT_INITIALIZED_DATA
+        | PELIB_IMAGE_SCN_MEM_READ
+        | PELIB_IMAGE_SCN_MEM_WRITE
+    ),
+    ".debug": (
+        PELIB_IMAGE_SCN_CNT_INITIALIZED_DATA
+        | PELIB_IMAGE_SCN_MEM_READ
+        | PELIB_IMAGE_SCN_MEM_DISCARDABLE
+    ),
+    ".drective": PELIB_IMAGE_SCN_LNK_INFO,
+    ".edata": (
+        PELIB_IMAGE_SCN_CNT_INITIALIZED_DATA | PELIB_IMAGE_SCN_MEM_READ
+    ),
+    ".idata": (
+        PELIB_IMAGE_SCN_CNT_INITIALIZED_DATA
+        | PELIB_IMAGE_SCN_MEM_READ
+        | PELIB_IMAGE_SCN_MEM_WRITE
+    ),
+    ".idlsym": PELIB_IMAGE_SCN_LNK_INFO,
+    ".pdata": (
+        PELIB_IMAGE_SCN_CNT_INITIALIZED_DATA | PELIB_IMAGE_SCN_MEM_READ
+    ),
+    ".rdata": (
+        PELIB_IMAGE_SCN_CNT_INITIALIZED_DATA | PELIB_IMAGE_SCN_MEM_READ
+    ),
+    ".reloc": (
+        PELIB_IMAGE_SCN_CNT_INITIALIZED_DATA
+        | PELIB_IMAGE_SCN_MEM_READ
+        | PELIB_IMAGE_SCN_MEM_DISCARDABLE
+    ),
+    ".rsrc": (PELIB_IMAGE_SCN_CNT_INITIALIZED_DATA | PELIB_IMAGE_SCN_MEM_READ),
+    ".sbss": (
+        PELIB_IMAGE_SCN_CNT_UNINITIALIZED_DATA
+        | PELIB_IMAGE_SCN_MEM_READ
+        | PELIB_IMAGE_SCN_MEM_WRITE
+    ),
+    ".sdata": (
+        PELIB_IMAGE_SCN_CNT_INITIALIZED_DATA
+        | PELIB_IMAGE_SCN_MEM_READ
+        | PELIB_IMAGE_SCN_MEM_WRITE
+    ),
+    ".srdata": (
+        PELIB_IMAGE_SCN_CNT_INITIALIZED_DATA | PELIB_IMAGE_SCN_MEM_READ
+    ),
+    ".sxdata": PELIB_IMAGE_SCN_LNK_INFO,
+    ".text": (
+        PELIB_IMAGE_SCN_CNT_CODE
+        | PELIB_IMAGE_SCN_MEM_EXECUTE
+        | PELIB_IMAGE_SCN_MEM_READ
+    ),
+    ".tls": (
+        PELIB_IMAGE_SCN_CNT_INITIALIZED_DATA
+        | PELIB_IMAGE_SCN_MEM_READ
+        | PELIB_IMAGE_SCN_MEM_WRITE
+    ),
+    ".tls$": (
+        PELIB_IMAGE_SCN_CNT_INITIALIZED_DATA
+        | PELIB_IMAGE_SCN_MEM_READ
+        | PELIB_IMAGE_SCN_MEM_WRITE
+    ),
+    ".vsdata": (
+        PELIB_IMAGE_SCN_CNT_INITIALIZED_DATA
+        | PELIB_IMAGE_SCN_MEM_READ
+        | PELIB_IMAGE_SCN_MEM_WRITE
+    ),
+    ".xdata": (
+        PELIB_IMAGE_SCN_CNT_INITIALIZED_DATA | PELIB_IMAGE_SCN_MEM_READ
+    ),
+}

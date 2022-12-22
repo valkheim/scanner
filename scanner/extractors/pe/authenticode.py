@@ -254,9 +254,6 @@ def print_all(sig: lief.PE.Signature, indent: int = 2):
 
 
 def get_lief_binary(filepath: str) -> T.Optional[lief.PE.Binary]:
-    if not lief.PE.is_pe(filepath):
-        return None
-
     try:
         return lief.PE.parse(filepath)
 

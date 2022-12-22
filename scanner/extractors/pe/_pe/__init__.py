@@ -1,3 +1,4 @@
+import functools
 import itertools
 import typing as T
 
@@ -7,15 +8,25 @@ from _pe.packers import PACKER_SECTIONS
 from _pe.rich_header import KNOWN_PRODUCT_IDS, vs_version, vs_version_fallback
 
 
-def load_pe_file(filepath: str) -> T.Optional[T.Any]:
+@functools.lru_cache(maxsize=None)
+def load_pefile_pe(filepath: str) -> T.Optional[T.Any]:
     try:
         return pefile.PE(filepath, fast_load=True)
     except pefile.PEFormatError:
         return None
 
 
+@functools.lru_cache(maxsize=None)
+def load_lief_pe(filepath: str) -> T.Optional[T.Any]:
+    if not lief.PE.is_pe(filepath):
+        return None
+
+    return lief.PE.parse(filepath)
+
+
+@functools.lru_cache(maxsize=None)
 def get_sections(filepath: str) -> T.Optional[T.List[T.Any]]:
-    if (pe := load_pe_file(filepath)) is None:
+    if (pe := load_pefile_pe(filepath)) is None:
         return None
 
     return [
@@ -31,6 +42,7 @@ def get_sections(filepath: str) -> T.Optional[T.List[T.Any]]:
     ]
 
 
+@functools.lru_cache(maxsize=None)
 def get_packers(filepath) -> T.Optional[T.List[str]]:
     if (sections := get_sections(filepath)) is None:
         return []
@@ -46,8 +58,9 @@ def get_packers(filepath) -> T.Optional[T.List[str]]:
     return list(set(candidates))
 
 
+@functools.lru_cache(maxsize=None)
 def get_imports(filepath: str) -> T.Optional[T.List[T.Any]]:
-    if (pe := load_pe_file(filepath)) is None:
+    if (pe := load_pefile_pe(filepath)) is None:
         return None
 
     pe.parse_data_directories(
@@ -56,16 +69,16 @@ def get_imports(filepath: str) -> T.Optional[T.List[T.Any]]:
     if not hasattr(pe, "DIRECTORY_ENTRY_IMPORT"):
         return None
 
-    acc = []
-    for entry in pe.DIRECTORY_ENTRY_IMPORT:
-        for imp in entry.imports:
-            acc += [(entry.dll, imp.address, imp.name)]
+    return [
+        (entry.dll, imp.address, imp.name)
+        for entry in pe.DIRECTORY_ENTRY_IMPORT
+        for imp in entry.imports
+    ]
 
-    return acc
 
-
+@functools.lru_cache(maxsize=None)
 def get_imports_hash(filepath: str) -> T.Optional[str]:
-    if (pe := load_pe_file(filepath)) is None:
+    if (pe := load_pefile_pe(filepath)) is None:
         return None
 
     pe.parse_data_directories(
@@ -77,8 +90,9 @@ def get_imports_hash(filepath: str) -> T.Optional[str]:
     return pe.get_imphash()
 
 
+@functools.lru_cache(maxsize=None)
 def get_exports(filepath: str) -> T.Optional[T.List[T.Any]]:
-    if (pe := load_pe_file(filepath)) is None:
+    if (pe := load_pefile_pe(filepath)) is None:
         return None
 
     pe.parse_data_directories(
@@ -94,7 +108,7 @@ def get_exports(filepath: str) -> T.Optional[T.List[T.Any]]:
 
 
 def get_stamps(filepath: str) -> T.Optional[T.Dict[str, str]]:
-    if (pe := load_pe_file(filepath)) is None:
+    if (pe := load_pefile_pe(filepath)) is None:
         return None
 
     pe.parse_data_directories()
@@ -128,8 +142,9 @@ def get_stamps(filepath: str) -> T.Optional[T.Dict[str, str]]:
     return acc
 
 
+@functools.lru_cache(maxsize=None)
 def get_rich_header(filepath: str) -> T.Optional[T.List[T.Any]]:
-    if (pe := load_pe_file(filepath)) is None:
+    if (pe := load_pefile_pe(filepath)) is None:
         return None
 
     if (rich_header := pe.parse_rich_header()) is None:
@@ -153,7 +168,7 @@ def get_rich_header(filepath: str) -> T.Optional[T.List[T.Any]]:
     return acc
 
 
-def resource(pe, r, parents=[], acc=[]):
+def _resource(pe, r, parents=[], acc=[]):
     if hasattr(r, "data"):
         return acc + [
             "-".join(parents + [str(r.id)]),
@@ -170,11 +185,12 @@ def resource(pe, r, parents=[], acc=[]):
         else:
             parents += [str(r.id)]
         for entry in r.directory.entries:
-            return resource(pe, entry, parents, acc)
+            return _resource(pe, entry, parents, acc)
 
 
+@functools.lru_cache(maxsize=None)
 def get_resources(filepath: str) -> T.Optional[T.List[T.Any]]:
-    if (pe := load_pe_file(filepath)) is None:
+    if (pe := load_pefile_pe(filepath)) is None:
         return None
 
     pe.parse_data_directories(
@@ -184,12 +200,13 @@ def get_resources(filepath: str) -> T.Optional[T.List[T.Any]]:
         return None
 
     return [
-        resource(pe, entry) for entry in pe.DIRECTORY_ENTRY_RESOURCE.entries
+        _resource(pe, entry) for entry in pe.DIRECTORY_ENTRY_RESOURCE.entries
     ]
 
 
+@functools.lru_cache(maxsize=None)
 def get_resources_section(filepath):
-    if (pe := load_pe_file(filepath)) is None:
+    if (pe := load_pefile_pe(filepath)) is None:
         return None
 
     pe.parse_data_directories(
@@ -198,17 +215,18 @@ def get_resources_section(filepath):
     if not hasattr(pe, "DIRECTORY_ENTRY_RESOURCE"):
         return None
 
-    res = pe.DIRECTORY_ENTRY_RESOURCE
-    return res
+    return pe.DIRECTORY_ENTRY_RESOURCE
 
 
+@functools.lru_cache(maxsize=None)
 def get_optional_header(filepath: str):
-    if (pe := load_pe_file(filepath)) is None:
+    if (pe := load_pefile_pe(filepath)) is None:
         return None
 
     return pe.OPTIONAL_HEADER
 
 
+@functools.lru_cache(maxsize=None)
 def get_size_of_optional_header(filepath: str) -> int:
     """
     Size of the OptionalHeader AND the data directories which follows this header.
@@ -217,41 +235,42 @@ def get_size_of_optional_header(filepath: str) -> int:
     * 0xE0 (224) for a PE32 (32 bits)
     * 0xF0 (240) for a PE32+ (64 bits)
     """
-    pe = lief.PE.parse(filepath)
+    pe = load_lief_pe(filepath)
     if not hasattr(pe, "header"):
         return 0
 
     return pe.header.sizeof_optional_header
 
 
+@functools.lru_cache(maxsize=None)
 def get_header_infos(filepath: str):
-    if (pe := load_pe_file(filepath)) is None:
+    if (pe := load_pefile_pe(filepath)) is None:
         return None
 
-    acc = {}
-    for value in [
-        "MajorLinkerVersion",
-        "MinorLinkerVersion",
-        "AddressOfEntryPoint",
-        "SizeOfImage",
-        "SizeOfCode",
-        "BaseOfCode",
-        "BaseOfData",
-        "SizeOfHeaders",
-        "SizeOfStackReserve",
-        "SizeOfStackCommit",
-        "SizeOfHeapReserve",
-        "SizeOfHeapCommit",
-        "CheckSum",
-    ]:
-        if hasattr(pe.OPTIONAL_HEADER, value):
-            acc[value] = getattr(pe.OPTIONAL_HEADER, value)
+    return {
+        value: getattr(pe.OPTIONAL_HEADER, value)
+        for value in [
+            "MajorLinkerVersion",
+            "MinorLinkerVersion",
+            "AddressOfEntryPoint",
+            "SizeOfImage",
+            "SizeOfCode",
+            "BaseOfCode",
+            "BaseOfData",
+            "SizeOfHeaders",
+            "SizeOfStackReserve",
+            "SizeOfStackCommit",
+            "SizeOfHeapReserve",
+            "SizeOfHeapCommit",
+            "CheckSum",
+        ]
+        if hasattr(pe.OPTIONAL_HEADER, value)
+    }
 
-    return acc
 
-
+@functools.lru_cache(maxsize=None)
 def get_subsystem(filepath: str):
-    if (pe := load_pe_file(filepath)) is None:
+    if (pe := load_pefile_pe(filepath)) is None:
         return None, None
 
     if not hasattr(pe.OPTIONAL_HEADER, "Subsystem"):
@@ -264,3 +283,11 @@ def get_subsystem(filepath: str):
         )
 
     return pe.OPTIONAL_HEADER.Subsystem, None
+
+
+@functools.lru_cache(maxsize=None)
+def has_valid_checksum(filepath: str) -> bool:
+    if (pe := load_pefile_pe(filepath)) is None:
+        return False
+
+    return pe.verify_checksum()

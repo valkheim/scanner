@@ -1,5 +1,6 @@
 # https://gist.github.com/islem-esi/334d223b3088e0bec5adc75f010c83c2
 # https://0x00sec.org/t/indicators-of-packers/12984
+# https://www.hexacorn.com/blog/2016/12/15/pe-section-names-re-visited/
 
 PACKER_SECTIONS = {
     ".aspack": "Aspack packer",
@@ -78,4 +79,24 @@ PACKER_SECTIONS = {
     ".WWPACK": "WWPACK Packer",
     ".yP": "Y0da Protector",
     ".y0da": "Y0da Protector",
+    # https://github.com/avast/retdec/blob/071852bbc9619342ce2409ce3241124526a3f0a0/src/fileformat/file_format/pe/pe_format.cpp#L333
+    ".WWP32": "",
+    ".ecode": "",
+    ".edata": "",
+    ".enigma1": "",
+    ".enigma2": "",
+    ".mnbvcx1": "",
+    ".mnbvcx2": "",
+    ".shrink1": "",
+    ".shrink2": "",
+    ".shrink3": "",
+    "UPX3": "UPX Packer",
+    "gu_idata": "",
+    "gu_rsrc": "",
+    "lz32.dll": "",
+    "pec": "",
+    "pec3": "",
+    "pec4": "",
+    "pec5": "",
+    "pec6": "",
 }

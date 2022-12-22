@@ -28,6 +28,8 @@ from scanner.features_data import (
     KEYBOARD_IMPORTS,
     SUSPICIOUS_IMPHASHES,
     SUSPICIOUS_IMPORTS,
+    USUSAL_SECTION_CHARACTERISTICS,
+    WHITELIST_SECTION_NAMES,
 )
 
 sys.path.append(
@@ -35,7 +37,6 @@ sys.path.append(
 )  # noqa
 import re
 
-from scanner.extractors.pe._pe import get_header_infos  # noqa
 from scanner.extractors.pe._pe import get_imports  # noqa
 from scanner.extractors.pe._pe import get_packers  # noqa
 from scanner.extractors.pe._pe import get_resources  # noqa
@@ -44,7 +45,13 @@ from scanner.extractors.pe._pe import get_sections  # noqa
 from scanner.extractors.pe._pe import get_size_of_optional_header  # noqa
 from scanner.extractors.pe._pe import get_stamps  # noqa
 from scanner.extractors.pe._pe import get_subsystem  # noqa
-from scanner.extractors.pe._pe import get_exports, get_optional_header  # noqa
+from scanner.extractors.pe._pe import (  # noqa
+    get_exports,
+    get_header_infos,
+    get_optional_header,
+    has_valid_checksum,
+    load_lief_pe,
+)
 
 ASCII_BYTE = rb" !\"#\$%&\'\(\)\*\+,-\./0123456789:;<=>\?@ABCDEFGHIJKLMNOPQRSTUVWXYZ\[\]\^_`abcdefghijklmnopqrstuvwxyz\{\|\}\\\~\t"
 CACHE = os.path.normpath(
@@ -90,6 +97,10 @@ async def feature_has_zero_checksum(filepath: str) -> int:
         return int(hdr["CheckSum"] == 0)
 
     return 0
+
+
+async def feature_has_valid_checksum(filepath: str) -> int:
+    return int(has_valid_checksum(filepath))
 
 
 async def feature_amount_of_resources(filepath: str) -> int:
@@ -238,7 +249,7 @@ async def feature_has_zero_entrypoint(filepath: str) -> int:
 
 
 async def feature_has_suspicious_resources_size(filepath: str) -> int:
-    if (pe := lief.PE.parse(filepath)) is None:
+    if (pe := load_lief_pe(filepath)) is None:
         return int(False)
 
     rsrc_directory = pe.data_directory(lief.PE.DATA_DIRECTORY.RESOURCE_TABLE)
@@ -283,21 +294,21 @@ async def feature_has_suspicious_number_of_imports(filepath: str) -> int:
 
 
 async def feature_has_cfg(filepath: str) -> int:
-    if (pe := lief.PE.parse(filepath)) is None:
+    if (pe := load_lief_pe(filepath)) is None:
         return int(False)
 
     return int(pe.optional_header.has(lief.PE.DLL_CHARACTERISTICS.GUARD_CF))
 
 
 async def feature_has_dep(filepath: str) -> int:
-    if (pe := lief.PE.parse(filepath)) is None:
+    if (pe := load_lief_pe(filepath)) is None:
         return int(False)
 
     return int(pe.optional_header.has(lief.PE.DLL_CHARACTERISTICS.NX_COMPAT))
 
 
 async def feature_has_aslr(filepath: str) -> int:
-    if (pe := lief.PE.parse(filepath)) is None:
+    if (pe := load_lief_pe(filepath)) is None:
         return int(False)
 
     return int(
@@ -306,7 +317,7 @@ async def feature_has_aslr(filepath: str) -> int:
 
 
 async def feature_ignores_seh(filepath: str) -> int:
-    if (pe := lief.PE.parse(filepath)) is None:
+    if (pe := load_lief_pe(filepath)) is None:
         return int(True)
 
     return int(pe.optional_header.has(lief.PE.DLL_CHARACTERISTICS.NO_SEH))
@@ -314,7 +325,7 @@ async def feature_ignores_seh(filepath: str) -> int:
 
 async def feature_ignores_gs(filepath: str) -> int:
     """Ignores stack cookies"""
-    if (pe := lief.PE.parse(filepath)) is None:
+    if (pe := load_lief_pe(filepath)) is None:
         return int(True)
 
     if not pe.has_configuration:
@@ -325,7 +336,7 @@ async def feature_ignores_gs(filepath: str) -> int:
 
 async def feature_ignores_ci(filepath: str) -> int:
     """Ignores code integrity"""
-    if (pe := lief.PE.parse(filepath)) is None:
+    if (pe := load_lief_pe(filepath)) is None:
         return int(True)
 
     if not pe.has_configuration:
@@ -335,7 +346,7 @@ async def feature_ignores_ci(filepath: str) -> int:
 
 
 async def feature_has_suspicious_debug_timestamp(filepath: str) -> int:
-    if (pe := lief.PE.parse(filepath)) is None:
+    if (pe := load_lief_pe(filepath)) is None:
         return int(False)
 
     if not pe.has_debug:
@@ -350,7 +361,7 @@ async def feature_has_suspicious_debug_timestamp(filepath: str) -> int:
 
 
 async def feature_is_wdm(filepath: str) -> int:
-    if (pe := lief.PE.parse(filepath)) is None:
+    if (pe := load_lief_pe(filepath)) is None:
         return int(False)
 
     return int(pe.optional_header.has(lief.PE.DLL_CHARACTERISTICS.WDM_DRIVER))
@@ -360,30 +371,25 @@ async def feature_amount_of_high_entropy_sections(filepath: str) -> int:
     if (sections := get_sections(filepath)) is None:
         return 0
 
-    acc: int = 0
-    for _name, _va, _rs, _vs, _char, ent in sections:
-        if 0 < ent < 7:
-            acc += 1
-
-    return acc
+    return sum(1 for _, _, _, _, _, entropy in sections if 0 < entropy < 7)
 
 
 async def feature_amount_of_shared_sections(filepath: str) -> int:
-    if (pe := lief.PE.parse(filepath)) is None:
+    if (pe := load_lief_pe(filepath)) is None:
         return 0
 
-    found = 0
-    for section in pe.sections:
+    # pe-studio allows a 0-1 range
+    return sum(
+        1
+        for section in pe.sections
         if section.has_characteristic(
             lief.PE.SECTION_CHARACTERISTICS.MEM_SHARED
-        ):
-            found += 1
-
-    return int(not 0 <= found <= 1)
+        )
+    )
 
 
 async def feature_has_first_section_writable(filepath: str) -> int:
-    if (pe := lief.PE.parse(filepath)) is None:
+    if (pe := load_lief_pe(filepath)) is None:
         return int(False)
 
     return int(
@@ -394,7 +400,7 @@ async def feature_has_first_section_writable(filepath: str) -> int:
 
 
 async def feature_has_last_section_executable(filepath: str) -> int:
-    if (pe := lief.PE.parse(filepath)) is None:
+    if (pe := load_lief_pe(filepath)) is None:
         return int(False)
 
     return int(
@@ -405,7 +411,7 @@ async def feature_has_last_section_executable(filepath: str) -> int:
 
 
 async def feature_has_many_executable_sections(filepath: str) -> int:
-    if (pe := lief.PE.parse(filepath)) is None:
+    if (pe := load_lief_pe(filepath)) is None:
         return int(False)
 
     i = 0
@@ -422,7 +428,7 @@ async def feature_has_many_executable_sections(filepath: str) -> int:
 
 
 async def feature_has_wx_section(filepath: str) -> int:
-    if (pe := lief.PE.parse(filepath)) is None:
+    if (pe := load_lief_pe(filepath)) is None:
         return int(False)
 
     for section in pe.sections:
@@ -437,14 +443,14 @@ async def feature_has_wx_section(filepath: str) -> int:
 
 
 async def feature_has_suspicious_size_of_initialied_data(filepath: str) -> int:
-    if (pe := lief.PE.parse(filepath)) is None:
+    if (pe := load_lief_pe(filepath)) is None:
         return int(False)
 
     return int(0 < pe.optional_header.sizeof_initialized_data < 0x1927C0)
 
 
 async def feature_has_suspicious_imphash(filepath: str) -> int:
-    if (pe := lief.PE.parse(filepath)) is None:
+    if (pe := load_lief_pe(filepath)) is None:
         return int(False)
 
     imphash = lief.PE.get_imphash(pe).lower()
@@ -454,42 +460,44 @@ async def feature_has_suspicious_imphash(filepath: str) -> int:
 async def feature_has_size_of_code_greater_than_size_of_code_sections(
     filepath: str,
 ) -> int:
-    if (pe := lief.PE.parse(filepath)) is None:
+    if (pe := load_lief_pe(filepath)) is None:
         return int(False)
 
-    code_section_size = 0
-    for section in pe.sections:
-        if section.has_characteristic(
-            lief.PE.SECTION_CHARACTERISTICS.CNT_CODE
-        ):
-            code_section_size += section.size
-
+    code_section_size = sum(
+        section.size
+        for section in pe.sections
+        if section.has_characteristic(lief.PE.SECTION_CHARACTERISTICS.CNT_CODE)
+    )
     return int(pe.optional_header.sizeof_code > code_section_size)
 
 
 async def feature_amount_of_suspicious_section_names(filepath: str) -> int:
-    if (pe := lief.PE.parse(filepath)) is None:
+    if (pe := load_lief_pe(filepath)) is None:
         return 0
 
-    whitelist = [
-        ".text",
-        ".bss",
-        ".rdata",
-        ".data",
-        ".idata",
-        ".reloc",
-        ".rsrc",
-    ]
-    amount = 0
-    for section in pe.sections:
-        if section.name not in whitelist:
-            amount += 1
+    return sum(
+        1
+        for section in pe.sections
+        if section.name not in WHITELIST_SECTION_NAMES
+    )
 
-    return amount
+
+async def feature_amount_of_suspicious_section_characteristics(
+    filepath: str,
+) -> int:
+    if (pe := load_lief_pe(filepath)) is None:
+        return 0
+
+    return sum(
+        1
+        for sec in pe.sections
+        if sec.name in USUSAL_SECTION_CHARACTERISTICS
+        and USUSAL_SECTION_CHARACTERISTICS[sec.name] != sec.characteristics
+    )
 
 
 async def feature_has_dos_stub(filepath: str) -> int:
-    if (pe := lief.PE.parse(filepath)) is None:
+    if (pe := load_lief_pe(filepath)) is None:
         return int(False)
 
     return int(len(pe.dos_stub) != 0)
@@ -569,6 +577,7 @@ def handle_file(
         "amount_of_ascii_strings": feature_amount_of_ascii_strings,
         "amount_of_unicode_strings": feature_amount_of_unicode_strings,
         "has_zero_checksum": feature_has_zero_checksum,
+        "has_valid_checksum": feature_has_valid_checksum,
         "has_packer": feature_has_packer,
         "has_authenticode": feature_has_authenticode,
         "has_debug_infos": feature_has_debug_infos,
@@ -611,6 +620,7 @@ def handle_file(
         "amount_of_suspicious_modules": feature_amount_of_suspicious_modules,
         "rich_header_products_count": feature_rich_header_products_count,
         "rich_header_vs_distinct_count": feature_rich_header_vs_distinct_count,
+        "feature_amount_of_suspicious_section_characteristics": feature_amount_of_suspicious_section_characteristics,
     }
     if method == "asyncio":
         if sys.version_info >= (3, 11):
@@ -953,6 +963,6 @@ def run(args: argparse.Namespace) -> int:
                 if not os.path.isfile(filepath):
                     continue
 
-                predict(classifier, filepath)
+                predict(classifier, filepath, verbose=False)
 
     return 0

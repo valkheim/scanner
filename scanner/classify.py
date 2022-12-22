@@ -23,6 +23,12 @@ from scanner.extractors.entropy.entropy import get_entropy
 from scanner.extractors.pe.authenticode import get_lief_binary  # noqa
 from scanner.extractors.pe.authenticode import has_authenticode  # noqa
 from scanner.extractors.pe.debug import get_debug_infos
+from scanner.features_data import (
+    ANTIDEBUG_IMPORTS,
+    KEYBOARD_IMPORTS,
+    SUSPICIOUS_IMPHASHES,
+    SUSPICIOUS_IMPORTS,
+)
 
 sys.path.append(
     os.path.join(os.path.dirname(__file__), "extractors", "pe")
@@ -420,21 +426,7 @@ async def feature_has_suspicious_imphash(filepath: str) -> int:
         return int(False)
 
     imphash = lief.PE.get_imphash(pe).lower()
-    blacklist = (
-        # https://www.mandiant.com/resources/blog/tracking-malware-import-hashing
-        "2c26ec4a570a502ed3e8484295581989",  # GREENCAT
-        "b722c33458882a1ab65a13e99efe357e",  # GREENCAT
-        "2d24325daea16e770eb82fa6774d70f1",  # GREENCAT
-        "0d72b49ed68430225595cc1efb43ced9",  # GREENCAT
-        "959711e93a68941639fd8b7fba3ca28f",  # STARSYPOUND
-        "4cec0085b43f40b4743dc218c585f2ec",  # COOKIEBAG
-        "3b10d6b16f135c366fc8e88cba49bc6c",  # NEWSREELS
-        "4f0aca83dfe82b02bbecce448ce8be00",  # NEWSREELS
-        "ee22b62aa3a63b7c17316d219d555891",  # TABMSGSQL
-        "a1a42f57ff30983efda08b68fedd3cfc",  # WEBC2
-        "7276a74b59de5761801b35c672c9ccb4",  # WEBC2
-    )
-    return int(imphash in blacklist)
+    return int(imphash in SUSPICIOUS_IMPHASHES)
 
 
 async def feature_has_size_of_code_greater_than_size_of_code_sections(
@@ -481,230 +473,7 @@ async def feature_has_dos_stub(filepath: str) -> int:
     return int(len(pe.dos_stub) != 0)
 
 
-async def feature_amount_of_antidebug_functions(filepath: str) -> int:
-    watchlist = {
-        "kernel32.dll": {
-            "IsDebuggerPresent",
-            "RegisterApplicationRestart",
-            "RegisterApplicationRecoveryCallback",
-            "ApplicationRecoveryInProgress",
-            "ApplicationRecoveryFinished",
-            "GetThreadSelectorEntry",
-            "RtlCaptureStackBackTrace",
-            "RegisterEventSource",
-            "RegisterHotKey",
-            "FatalAppExit",
-            "ContinueDebugEvent",
-            "DebugActiveProcessStop",
-            "SetDebugErrorLevel",
-            "DebugActiveProcess",
-            "DebugBreak",
-            "FlushInstructionCache",
-            "CheckRemoteDebuggerPresent",
-            "RtlLookupFunctionEntry",
-            "OutputDebugString",
-            "RtlPcToFileHeader",
-        },
-        "shlwapi.dll": {
-            "OutputDebugStringWrap",
-        },
-        "loadperf.dll": {
-            "LoadPerfCounterTextStrings",
-            "UnloadPerfCounterTextStrings",
-        },
-        "ntdll.dll": {
-            "DbgUiConnectToDbg",
-            "DbgUiDebugActiveProcess",
-            "DbgPrint",
-            "DbgPrintEx",
-            "QueryTrace",
-            "EtwLogTraceEvent",
-            "EtwEventWrite",
-            "EtwEventEnabled",
-            "EtwEventRegister",
-            "EtwEventUnregister",
-            "EtwUnregisterTraceGuids",
-            "EtwRegisterTraceGuids",
-            "EtwGetTraceLoggerHandle",
-            "EtwGetTraceEnableLevel",
-            "EtwGetTraceEnableFlags",
-            "EtwTraceMessage",
-            "NtGetContextThread",
-            "WerReportSQMEvent",
-            "WerRegisterMemoryBlock",
-            "WerUnregisterMemoryBlock",
-        },
-        "advapi32.dll": {
-            "EventRegister",
-            "EventSetInformation",
-            "EventUnregister",
-            "EventWriteTransfer",
-            "ElfOpenEventLog",
-            "ElfReadEventLog",
-            "ElfReportEvent",
-            "ElfReportEventAndSource",
-            "BackupEventLog",
-            "ClearEventLog",
-            "CloseEventLog",
-            "DeregisterEventSource",
-            "GetEventLogInformation",
-            "GetNumberOfEventLogRecords",
-            "GetOldestEventLogRecord",
-            "NotifyChangeEventLog",
-            "OpenBackupEventLog",
-            "OpenEventLog",
-            "ReadEventLog",
-            "RegisterEventSource",
-            "ReportEvent",
-            "SaferRecordEventLogEntry",
-            "StartTrace",
-            "CloseTrace",
-            "ProcessTrace",
-            "FlushTrace",
-            "OpenTrace",
-            "QueryAllTraces",
-            "LockServiceDatabase",
-            "GetNumberOfEventLogRecords",
-            "GetOldestEventLogRecord",
-            "BackupEventLog",
-            "NotifyChangeEventLog",
-            "DeregisterEventSource",
-            "ReportEvent",
-            "GetTraceEnableLevel",
-        },
-        "psapi.dll": {
-            "EmptyWorkingSet",
-            "EnumDeviceDrivers",
-            "EnumPageFiles",
-            "GetMappedFileName",
-            "GetDeviceDriverBaseName",
-            "GetDeviceDriverBaseName",
-            "GetDeviceDriverFileName",
-            "GetMappedFileName",
-            "GetModuleInformation",
-            "GetPerformanceInfo",
-            "RtlImageNtHeader",
-            "RtlImageDirectoryEntryToData",
-        },
-        "mspdb80.dll": {
-            "PDBOpenValidate5",
-        },
-        "imagehlp.dll": {
-            "UpdateDebugInfoFileEx",
-            "CheckSumMappedFile",
-            "EnumerateLoadedModulesW64",
-            "ImageNtHeader",
-            "ImageRvaToVa",
-            "StackWalk64",
-            "SymCleanup",
-            "SymFromAddr",
-            "SymFunctionTableAccess64",
-            "SymGetModuleInfo64",
-            "SymGetModuleBase64",
-            "SymGetModuleInfoW64",
-            "SymGetOptions",
-            "SymGetSymFromName",
-            "SymInitialize",
-            "SymLoadModule64",
-            "SymRegisterCallback64",
-            "SymSetOptions",
-            "SymUnloadModule64",
-            "SymAddSourceStream",
-            "SymEnumSourceFileTokens",
-            "SymEnumSourceFiles",
-            "SymGetSourceFileFromToken",
-            "SymGetSourceFileToken",
-            "SymGetSourceVarFromToken",
-            "SymMatchString",
-            "SymRegisterCallbackW64",
-            "SymSetHomeDirectory",
-            "SymSrvGetFileIndexes",
-            "RemoveRelocations",
-            "BindImage",
-            "BindImageEx",
-            "CheckSumMappedFile",
-            "EnumerateLoadedModules64",
-            "EnumerateLoadedModules",
-            "EnumerateLoadedModulesEx",
-            "FindDebugInfoFile",
-            "FindDebugInfoFileEx",
-            "FindExecutableImage",
-            "FindExecutableImageEx",
-            "FindFileInPath",
-            "FindFileInSearchPath",
-            "GetImageConfigInformation",
-            "GetImageUnusedHeaderBytes",
-            "GetTimestampForLoadedLibrary",
-            "ImageAddCertificate",
-            "ImageDirectoryEntryToData",
-            "ImageDirectoryEntryToDataEx",
-            "ImageEnumerateCertificates",
-            "ImageGetCertificateData",
-            "ImageGetCertificateHeader",
-            "ImageGetDigestStream",
-            "ImageLoad",
-            "ImageRemoveCertificate",
-            "ImageRvaToSection",
-            "ImageUnload",
-            "ImagehlpApiVersion",
-            "ImagehlpApiVersionEx",
-            "MakeSureDirectoryPathExists",
-            "MapAndLoad",
-            "MapDebugInformation",
-            "MapFileAndCheckSum",
-            "ReBaseImage64",
-            "ReBaseImage",
-            "RemovePrivateCvSymbolic",
-            "RemovePrivateCvSymbolicEx",
-            "SearchTreeForFile",
-            "SetImageConfigInformation",
-            "SplitSymbols",
-            "StackWalk",
-            "SymEnumSym",
-            "TouchFileTimes",
-            "UnDecorateSymbolName",
-            "UnMapAndLoad",
-            "UnmapDebugInformation",
-            "UpdateDebugInfoFile",
-        },
-        "dbghelp.dll": {
-            "EnumDirTree",
-            "SymFromAddr",
-            "SymGetModuleBase64",
-            "SymFunctionTableAccess64",
-            "SymCleanup",
-            "StackWalk64",
-            "SymInitialize",
-            "SymFunctionTableAccess64",
-            "SymGetModuleBase64",
-            "StackWalk64",
-            "ImageNtHeader",
-            "SymUnloadModule64",
-            "SymLoadModule64",
-            "SymLoadModuleEx",
-            "SymGetOptions",
-            "SymSetOptions",
-            "MiniDumpWriteDump",
-            "SymGetSymFromName",
-            "SymFromAddr",
-            "SymCleanup",
-            "SymGetModuleInfoW64",
-            "SymRegisterCallback64",
-            "EnumerateLoadedModules",
-            "EnumerateLoadedModulesW64",
-            "SymInitialize",
-            "ImageDirectoryEntryToData",
-            "SymEnumSym",
-            "SymEnumerateSymbolsW",
-            "MapDebugInformation",
-            "SymEnumerateSymbols64",
-            "SymGetSymFromAddr64",
-            "SymGetSymFromName64",
-            "SymGetSymNext64",
-            "SymGetSymPrev64",
-            "UnMapDebugInformation",
-        },
-    }
+def _in_imports_list(filepath: str, watchlist) -> int:
     if (imports := get_imports(filepath)) is None:
         return 0
 
@@ -714,6 +483,30 @@ async def feature_amount_of_antidebug_functions(filepath: str) -> int:
             continue
 
         if function in watchlist[dll.lower()]:
+            ret += 1
+
+    return ret
+
+
+async def feature_amount_of_antidebug_functions(filepath: str) -> int:
+    return _in_imports_list(filepath, ANTIDEBUG_IMPORTS)
+
+
+async def feature_amount_of_keyboard_functions(filepath: str) -> int:
+    return _in_imports_list(filepath, KEYBOARD_IMPORTS)
+
+
+async def feature_amount_of_suspicious_functions(filepath: str) -> int:
+    return _in_imports_list(filepath, SUSPICIOUS_IMPORTS)
+
+
+async def feature_amount_of_suspicious_modules(filepath: str) -> int:
+    if (imports := get_imports(filepath)) is None:
+        return 0
+
+    ret = 0
+    for dll, _n, _f in imports:
+        if dll in SUSPICIOUS_IMPORTS:  # lower?
             ret += 1
 
     return ret
@@ -791,6 +584,9 @@ def handle_file(
         "amount_of_suspicious_section_names": feature_amount_of_suspicious_section_names,
         "has_dos_stub": feature_has_dos_stub,
         "amount_of_antidebug_functions": feature_amount_of_antidebug_functions,
+        "amount_of_keyboard_functions": feature_amount_of_keyboard_functions,
+        "amount_of_suspicious_functions": feature_amount_of_suspicious_functions,
+        "amount_of_suspicious_modules": feature_amount_of_suspicious_modules,
     }
     if method == "asyncio":
         if sys.version_info >= (3, 11):
@@ -892,7 +688,7 @@ def create_correlation_matrix(outdir: str) -> None:
     correlation_matrix = df.corr()
     # Generate a mask for the upper triangle
     mask = np.triu(np.ones_like(correlation_matrix, dtype=bool))
-    plt.subplots(figsize=(11, 9))
+    plt.subplots(figsize=(len(feature_names) / 1.8, len(feature_names) / 1.8))
     sns.heatmap(correlation_matrix, annot=True, mask=mask, square=True)
     plt.savefig(f"{outdir}/correlation_matrix.png", bbox_inches="tight")
 
@@ -904,8 +700,8 @@ def save_feature_importance(
     label: str,
 ) -> None:
     print(f"Save '{label}' feature importance")
-    plt.tight_layout()
-    bars = plt.barh(feature_names, importances)
+    plt.figure(figsize=(10, 18))
+    bars = plt.barh(feature_names, importances, height=0.75)
     for bar in bars:
         width = bar.get_width()
         label_y = bar.get_y() + bar.get_height() / 2
@@ -1072,10 +868,33 @@ def predict(classifier, test, verbose: bool = False):
     print(f"{test} is {classes[y[0]]}")
 
 
+class Import:
+    def __init__(self, lib, fct):
+        self.lib = lib
+        self.fct = fct
+        self.blacklisted = False
+        self.group = None
+
+    def __str__(self):
+        return (
+            self.lib
+            + ": "
+            + self.fct
+            + ", blacklisted: "
+            + str(self.blacklisted)
+            + " with group: "
+            + str(self.group)
+        )
+
+
 def run(args: argparse.Namespace) -> int:
     if args.dry:
         features = handle_file(args.dry, "asyncio")
-        print(features)
+        print(
+            pd.DataFrame.from_dict(
+                features, orient="index", columns=["Value"]
+            ).to_string()
+        )
 
     if args.output_dir and args.malwares_dir and args.benigns_dir:
         os.makedirs(args.output_dir, exist_ok=True)

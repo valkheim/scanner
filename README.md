@@ -132,3 +132,19 @@ Create scatter matrix
 Create correlation matrix
 /scanner$ feh minimal/correlation_matrix.png
 ```
+
+## Extract features of a single file
+
+```console
+/scanner$ poetry run scanner classify --dry files/pe-mingw32-strip.exe
+                                                        Value
+amount_of_exports                                           0
+amount_of_imports                                         160
+amount_of_distinct_import_modules                           5
+amount_of_sections                                          8
+[...]
+amount_of_antidebug_functions                               0
+amount_of_keyboard_functions                                0
+amount_of_suspicious_functions                              0
+amount_of_suspicious_modules                                0
+```

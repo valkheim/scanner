@@ -134,6 +134,28 @@ async def feature_has_rich_header(filepath: str) -> int:
     return int(get_rich_header(filepath) is not None)
 
 
+async def feature_rich_header_products_count(filepath: str) -> int:
+    if (rich_header := get_rich_header(filepath)) is None:
+        return 0
+
+    ret = 0
+    for _product_id, _product, _version, count, _vs in rich_header:
+        ret += int(count)
+
+    return count
+
+
+async def feature_rich_header_vs_distinct_count(filepath: str) -> int:
+    if (rich_header := get_rich_header(filepath)) is None:
+        return 0
+
+    vss = []
+    for _product_id, _product, _version, _count, vs in rich_header:
+        vss += [vs]
+
+    return len(set(vss))
+
+
 async def feature_has_native_subsystem(filepath: str) -> int:
     ss_id, _ = get_subsystem(filepath)
     return int(ss_id == 1)
@@ -587,6 +609,8 @@ def handle_file(
         "amount_of_keyboard_functions": feature_amount_of_keyboard_functions,
         "amount_of_suspicious_functions": feature_amount_of_suspicious_functions,
         "amount_of_suspicious_modules": feature_amount_of_suspicious_modules,
+        "rich_header_products_count": feature_rich_header_products_count,
+        "rich_header_vs_distinct_count": feature_rich_header_vs_distinct_count,
     }
     if method == "asyncio":
         if sys.version_info >= (3, 11):

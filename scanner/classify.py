@@ -902,25 +902,6 @@ def predict(classifier, test, verbose: bool = False):
     print(f"{test} is {classes[y[0]]}")
 
 
-class Import:
-    def __init__(self, lib, fct):
-        self.lib = lib
-        self.fct = fct
-        self.blacklisted = False
-        self.group = None
-
-    def __str__(self):
-        return (
-            self.lib
-            + ": "
-            + self.fct
-            + ", blacklisted: "
-            + str(self.blacklisted)
-            + " with group: "
-            + str(self.group)
-        )
-
-
 def run(args: argparse.Namespace) -> int:
     if args.dry:
         features = handle_file(args.dry, "asyncio")

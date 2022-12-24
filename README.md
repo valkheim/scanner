@@ -1,14 +1,21 @@
-# Install && run
+# Scanner
+
+This is a PE file static analysis engine.
+
+
+## Install && run
+
+This is a poetry-managed python project.
 
 ```
 /scanner$ poetry install
-/scanner$ poetry run scanner
+/scanner$ poetry run scanner gui
  * Serving Flask app '__main__'
 
 [...]
 ```
 
-# Test release
+## Test release
 
 ```
 /scanner$ poetry build
@@ -32,9 +39,9 @@ Press CTRL+C to quit
  * Debugger PIN: 119-810-875
 ```
 
-# Classification
+## Classification
 
-## Create classification model
+### Create classification model
 
 ```console
 /scanner$ poetry run scanner classify --output_dir minimal --benigns_dir files/beningware/ --malwares_dir files/malware/
@@ -80,7 +87,7 @@ Files generated:
 * `random_forest.joblib`: fitted classifier dump
 * `random_forest_feature_importance.png`: feature importance for that classifier
 
-## Single file prediction
+### Single file prediction
 
 ```console
 /scanner$ poetry run scanner classify --classifier_path minimal/random_forest.joblib --test_file files/pe-Windows-x64-cmd
@@ -104,7 +111,7 @@ Files generated:
 files/pe-Windows-x64-cmd is benign
 ```
 
-## Multiple files predictions
+### Multiple files predictions
 
 ```console
 /scanner$ poetry run scanner classify --classifier_path minimal/random_forest.joblib --test_dir files/
@@ -117,7 +124,7 @@ files/pe-Windows-x86-cmd is benign
 files/pe-Windows-x64-cmd is benign
 ```
 
-## Features scatter matrix
+### Features scatter matrix
 
 ```console
 /scanner$ poetry run scanner classify --output_dir minimal --scatter_matrix
@@ -125,7 +132,7 @@ Create scatter matrix
 /scanner$ feh minimal/scatter_matrix.png
 ```
 
-## Features correlation matrix
+### Features correlation matrix
 
 ```console
 /scanner$ poetry run scanner classify --output_dir minimal --correlation_matrix
@@ -133,7 +140,7 @@ Create correlation matrix
 /scanner$ feh minimal/correlation_matrix.png
 ```
 
-## Extract features of a single file
+### Extract features of a single file
 
 ```console
 /scanner$ poetry run scanner classify --dry files/pe-mingw32-strip.exe

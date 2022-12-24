@@ -14,9 +14,8 @@ import pandas as pd
 import seaborn as sns
 import uvloop
 from joblib import Parallel, delayed
-from sklearn import metrics
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import RepeatedStratifiedKFold, cross_val_score
 from sklearn.tree import DecisionTreeClassifier, export_graphviz
 
 from scanner.extractors.entropy.entropy import get_entropy
@@ -786,6 +785,16 @@ def create_decision_tree(
     return classifier
 
 
+def evaluate_model(model, X, y):
+    # define the evaluation procedure
+    cv = RepeatedStratifiedKFold(n_repeats=3, random_state=1)
+    # evaluate the model and collect the results
+    scores = cross_val_score(
+        model, X, y.values.ravel(), scoring="accuracy", cv=cv, n_jobs=-1
+    )
+    return scores
+
+
 def create_random_forest(
     outdir: str,
     feature_values,
@@ -794,22 +803,18 @@ def create_random_forest(
     label: str,
 ) -> None:
     print("Create random forest")
-    X = pd.DataFrame(feature_values, columns=feature_names)
-    y = pd.DataFrame(data_class_distribution, columns=["Binary type"])
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
-    ((ntest, _), (ntrain, _)) = (X_test.shape, X_train.shape)
-    print(f"Train samples: {ntrain}")
-    print(f"Test  samples: {ntest}")
     if not os.path.exists(f"{outdir}/{label}.joblib"):
+        X = pd.DataFrame(feature_values, columns=feature_names)
+        y = pd.DataFrame(data_class_distribution, columns=["Binary type"])
         classifier = RandomForestClassifier(n_jobs=-1)
-        classifier.fit(X_train, y_train.values.ravel())
+        scores = evaluate_model(classifier, X, y)
+        print(f"Accuracy: {np.mean(scores):.3f} ({np.std(scores):.3f})")
+        classifier.fit(X, y.values.ravel())
         joblib.dump(classifier, f"{outdir}/{label}.joblib")
 
     else:
         classifier = joblib.load(f"{outdir}/{label}.joblib")
 
-    y_pred = classifier.predict(X_test)
-    print("RF accuracy:", metrics.accuracy_score(y_test, y_pred))
     importances = classifier.feature_importances_
     save_feature_importance(outdir, feature_names, importances, label)
     return classifier

@@ -3775,94 +3775,481 @@ SUSPICIOUS_IMPHASHES = [
 # https://github.com/avast/retdec/blob/071852bbc9619342ce2409ce3241124526a3f0a0/src/fileformat/file_format/pe/pe_format.cpp#L243
 # http://www.hexacorn.com/blog/2016/12/15/pe-section-names-re-visited/
 WHITELIST_SECTION_NAMES = [
-    ".00cfg",
-    ".BSS",
-    ".CLR_UEF",
-    ".CRT",
-    ".DATA",
-    ".apiset",
-    ".arch",
-    ".autoload_text",
-    ".bindat",
-    ".bootdat",
-    ".bss",
-    ".buildid",
-    ".code",
-    ".complua",
-    ".cormeta",
-    ".cygwin_dll_common",
-    ".data",
-    ".data1",
-    ".data2",
-    ".data3",
-    ".debug  $F",
-    ".debug  $P",
-    ".debug  $S",
-    ".debug  $T",
-    ".debug",
-    ".didat",
-    ".didata",
-    ".drectve ",
-    ".edata",
-    ".eh_fram",
-    ".export",
-    ".fasm",
-    ".flat",
-    ".gfids",
-    ".giats",
-    ".gljmp",
-    ".glue_7",
-    ".glue_7t",
-    ".idata",
-    ".idlsym",
-    ".impdata",
-    ".import",
-    ".itext",
-    ".ndata",
-    ".orpc",
-    ".pdata",
-    ".rdata",
-    ".reloc",
-    ".rodata",
-    ".rsrc",
-    ".sbss",
-    ".script",
-    ".sdata",
-    ".shared",
-    ".srdata",
-    ".stab",
-    ".stabstr",
-    ".sxdata",
-    ".text",
-    ".text0",
-    ".text1",
-    ".text2",
-    ".text3",
-    ".textbss",
-    ".tls",
-    ".tls$",
-    ".udata",
-    ".vsdata",
-    ".wixburn",
-    ".wpp_sf",
-    ".xdata",
-    "BSS",
-    "CODE",
-    "DATA",
-    "DGROUP",
-    "INIT",
-    "PAGE",
-    "Shared",
-    "edata",
-    "idata",
-    "minATL",
-    "rdata",
-    "sdata",
-    "shared",
-    "testdata",
-    "text",
+    ".00cfg",  # Control Flow Guard (CFG) section (added by newer versions of Visual Studio)
+    ".AAWEBS",  # section used by Amiti Antivirus DLLs webspam.dll and webspamwow64.dll
+    ".apiset",  # a section present inside the apisetschema.dll
+    ".arch",  # Alpha-architecture section
+    ".autoload_text",  # cygwin/gcc; the Cygwin DLL uses a section to avoid copying certain data on fork.
+    ".bindat",  # Binary data (also used by one of the downware installers based on LUA)
+    ".bootdat",  # section that can be found inside Visual Studio files; contains palette entries
+    ".bss",  # Uninitialized Data Section
+    ".BSS",  # Uninitialized Data Section
+    ".buildid",  # gcc/cygwin; Contains debug information (if overlaps with debug directory)
+    ".CLR_UEF",  # .CLR Unhandled Exception Handler section; see https://github.com/dotnet/coreclr/blob/master/src/vm/excep.h
+    ".code",  # Code Section
+    ".cormeta",  # .CLR Metadata Section
+    ".complua",  # Binary data, most likely compiled LUA (also used by one of the downware installers based on LUA)
+    ".CRT",  # Initialized Data Section  (C RunTime)
+    ".cygwin_dll_common",  # cygwin section containing flags representing Cygwin’s capabilities; refer to cygwin.sc and wincap.cc inside Cygwin run-time
+    ".data",  # Data Section
+    ".DATA",  # Data Section
+    ".data1",  # Data Section
+    ".data2",  # Data Section
+    ".data3",  # Data Section
+    ".debug",  # Debug info Section
+    ".debug$F",  # Debug info Section (Visual C++ version <7.0)
+    ".debug$P",  # Debug info Section (Visual C++ debug information",  # precompiled information
+    ".debug$S",  # Debug info Section (Visual C++ debug information",  # symbolic information)
+    ".debug$T",  # Debug info Section (Visual C++ debug information",  # type information)
+    ".drectve ",  # directive section (temporary, linker removes it after processing it; should not appear in a final PE image)
+    ".didat",  # Delay Import Section
+    ".didata",  # Delay Import Section
+    ".edata",  # Export Data Section
+    ".eh_fram",  # gcc/cygwin; Exception Handler Frame section
+    ".export",  # Alternative Export Data Section
+    ".fasm",  # FASM flat Section
+    ".flat",  # FASM flat Section
+    ".gfids",  # section added by new Visual Studio (14.0); purpose unknown
+    ".giats",  # section added by new Visual Studio (14.0); purpose unknown
+    ".gljmp",  # section added by new Visual Studio (14.0); purpose unknown
+    ".glue_7t",  # ARMv7 core glue functions (thumb mode)
+    ".glue_7",  # ARMv7 core glue functions (32-bit ARM mode)
+    ".idata",  # Initialized Data Section  (Borland)
+    ".idlsym",  # IDL Attributes (registered SEH)
+    ".impdata",  # Alternative Import data section
+    ".import",  # Alternative Import data section
+    ".itext",  # Code Section  (Borland)
+    ".ndata",  # Nullsoft Installer section
+    ".orpc",  # Code section inside rpcrt4.dll
+    ".pdata",  # Exception Handling Functions Section (PDATA records)
+    ".rdata",  # Read-only initialized Data Section  (MS and Borland)
+    ".reloc",  # Relocations Section
+    ".rodata",  # Read-only Data Section
+    ".rsrc",  # Resource section
+    ".sbss",  # GP-relative Uninitialized Data Section
+    ".script",  # Section containing script
+    ".shared",  # Shared section
+    ".sdata",  # GP-relative Initialized Data Section
+    ".srdata",  # GP-relative Read-only Data Section
+    ".stab",  # Created by Haskell compiler (GHC)
+    ".stabstr",  # Created by Haskell compiler (GHC)
+    ".sxdata",  # Registered Exception Handlers Section
+    ".text",  # Code Section
+    ".text0",  # Alternative Code Section
+    ".text1",  # Alternative Code Section
+    ".text2",  # Alternative Code Section
+    ".text3",  # Alternative Code Section
+    ".textbss",  # Section used by incremental linking
+    ".tls",  # Thread Local Storage Section
+    ".tls$",  # Thread Local Storage Section
+    ".udata",  # Uninitialized Data Section
+    ".vsdata",  # GP-relative Initialized Data
+    ".xdata",  # Exception Information Section
+    ".wixburn",  # Wix section; see https://github.com/wixtoolset/wix3/blob/develop/src/burn/stub/StubSection.cpp
+    ".wpp_sf ",  # section that is most likely related to WPP (Windows software trace PreProcessor); not sure how it is used though; the code inside the section is just a bunch of routines that call FastWppTraceMessage that in turn calls EtwTraceMessage
+    "BSS",  # Uninitialized Data Section  (Borland)
+    "CODE",  # Code Section (Borland)
+    "DATA",  # Data Section (Borland)
+    "DGROUP",  # Legacy data group section
+    "edata",  # Export Data Section
+    "idata",  # Initialized Data Section  (C RunTime)
+    "INIT",  # INIT section (drivers)
+    "minATL",  # Section that can be found inside some ARM PE files; purpose unknown; .exe files on Windows 10 also include this section as well; its purpose is unknown, but it contains references to ___pobjectentryfirst,___pobjectentrymid,___pobjectentrylast pointers used by Microsoft::WRL::Details::ModuleBase::… methods described e.g. here, and also referenced by .pdb symbols; so, looks like it is being used internally by Windows Runtime C++ Template Library (WRL) which is a successor of Active Template Library (ATL); further research needed
+    "PAGE",  # PAGE section (drivers)
+    "rdata",  # Read-only Data Section
+    "sdata",  # Initialized Data Section
+    "shared",  # Shared section
+    "Shared",  # Shared section
+    "testdata",  # section containing test data (can be found inside Visual Studio files)
+    "text",  # Alternative Code Section
+    # 2020-08-15
+    ".imrsiv",
+    # https://www.hexacorn.com/blog/2019/07/26/pe-section-names-re-visited-again/
+    "RT_CODE",
+    "RT_DATA",
+    "RT_CONST",
+    "RT_BSS",
+    # OpenCV
+    "IPPCODE",
+    "IPPDATA",
+    # HP sections
+    "TulipLog",
+    # NVidia
+    "_NVTEXT3",
+    # "obvious ones"
+    ".SHAREDS",
+    "_LTEXT",
+    "_LDATA",
+    "COMPRESS",
+    "FlashPix",
+    "NONPAGED",
+    "INITCONS",
+    "COMMONDA",
+    "PRIVATE",
+    "ApiHooks",
+    # PAGE* sections
+    "PAGECONS",
+    "PAGEDATA",
+    "PAGE_COM",
+    "PAGE_INI",
+    "PAGEDC11",
+    "PAGE_DDC",
+    "PAGEDC80",
+    "PAGEDFER",
+    "PAGECFER",
+    "PAGE_CAI",
+    "PAGE_ISR",
+    "PAGEDC60",
+    "PAGEDC10",
+    "PAGESER",
+    "PAGEDC50",
+    "PAGEDC40",
+    "PAGEcKPL",
+    "PAGEcFRM",
+    "PAGE_DAL",
+    "PAGEcRMA",
+    "PAGEcRM",
+    "PAGE_MCM",
+    "PAGEdMXL",
+    "PAGEdKPL",
+    "PAGEdFRM",
+    "PAGEcMXL",
+    "PAGE_RW",
+    "PAGE_RO",
+    "PAGE_CPR",
+    "PAGE_CPC",
+    "PAGE_PPL",
+    "PAGEDTES",
+    "PAGEDNLG",
+    "PAGECTES",
+    "PAGECNLG",
+    "NON_PAGE",
+    "PAGESRP0",
+    "PAGEdreg",
+    "PAGEdjaw",
+    "PAGEcsrv",
+    "PAGEcjaw",
+    "PAGEcsec",
+    "PAGEcTSL",
+    "PAGEdctw",
+    "PAGEcctw",
+    "PAGEcwfd",
+    "PAGEcpsm",
+    "PAGEcnlo",
+    "PAGEcast",
+    "PAGELK",
+    "PAGEdsv_",
+    "PAGEdcln",
+    "PAGEcsv_",
+    "PAGEccln",
+    "PAGE_DEV",
+    "PAGEdStn",
+    "PAGE_IVI",
+    "PAGE_ISI",
+    "PAGE_IKV",
+    "PAGE_IIL",
+    "PAGE_ICZ",
+    "PAGE_ICI",
+    "PAGEdscn",
+    "PAGEdimg",
+    "PAGEdSnF",
+    "PAGEcimg",
+    "PAGEDC12",
+    "PAGE_ITN",
+    "PAGE_ILN",
+    "PAGE_IEG",
+    "PAGE_IBT",
+    "PAGEdoid",
+    "PAGEDC41",
+    "PAGE_WSV",
+    "PAGEdwi2",
+    "PAGEdwi1",
+    "PAGE_CRM",
+    "PAGEdPSL",
+    "PAGEcPSL",
+    "PAGEdPsr",
+    "PAGErPSL",
+    "PAGErMXL",
+    "PAGErKPL",
+    "PAGErFRM",
+    "PAGEdTSL",
+    "PAGE_PWR",
+    "PAGE_TOP",
+    "PAGE_PMC",
+    "PAGE_MEM",
+    "PAGE_DBG",
+    "PAGED",
+    "PAGE_OSS",
+    "PAGECODE",
+    "PAGEDLEG",
+    "PAGECLEG",
+    "PAGEcwkp",
+    "PAGEcptw",
+    "PAGE_LK",
+    "PAGE_IGN",
+    "PAGEdSnd",
+    "PAGE_DAT",
+    "PAGEdWsP",
+    "PAGEdrlg",
+    "PAGEKD",
+    "PAGE_IRV",
+    "PAGEipp",
+    "PAGEABLE",
+    "PAGEdtyl",
+    "PAGEdpma",
+    "PAGEdkmr",
+    "PAGEdcpk",
+    "PAGEctyl",
+    "PAGEcpma",
+    "PAGEckmr",
+    "PAGEccpk",
+    "PAGED_DA",
+    "PAGEcLGC",
+    "PAGEI028",
+    "PAGEI027",
+    "PAGEI026",
+    "PAGEI025",
+    "PAGEI024",
+    "PAGEI023",
+    "PAGEI022",
+    "PAGEI021",
+    "PAGEI020",
+    "PAGEI019",
+    "PAGEI018",
+    "PAGEI017",
+    "PAGEI016",
+    "PAGEI015",
+    "PAGEI014",
+    "PAGEI013",
+    "PAGEI012",
+    "PAGEI011",
+    "PAGEI010",
+    "PAGEI009",
+    "PAGEI008",
+    "PAGEI007",
+    "PAGEI006",
+    "PAGEI005",
+    "PAGEI004",
+    "PAGEI003",
+    "PAGEI002",
+    "PAGEI001",
+    "PAGEI000",
+    "PAGE_BIO",
+    "PAGEVRFY",
+    "PAGED_CO",
+    "PAGEPARW",
+    "PAGEVRFD",
+    "PAGEVRFC",
+    "PAGEHDLS",
+    "PAGEWMI",
+    "PAGESPEC",
+    "PAGE_VCN",
+    "PAGE_SMU",
+    "PAGE_PSP",
+    "PAGE_ISP",
+    "PAGE_GVM",
+    "PAGE_GC_",
+    "PAGE_BGM",
+    "PAGE0003",
+    "PAGE0002",
+    "PAGE0001",
+    "PAGEdQua",
+    "PAGESRP",
+    "PAGESENM",
+    "PAGE_NO_",
+    "PageIVUE",
+    "PAGErVLT",
+    "PAGEdVLT",
+    "PAGEccpt",
+    "PAGEcVLT",
+    "PAGELKCO",
+    "PAGE_DF_",
+    "PAGEdThP",
+    "PAGE_VCE",
+    "PAGE_UVD",
+    "PAGEI029",
+    "PAGECNST",
+    "PAGELKD",
+    "PAGEtext",
+    "PAGErdat",
+    "PAGEdata",
+    "PAGE_IOM",
+    "PAGEnPSL",
+    "PAGEnMXL",
+    "PAGEnKPL",
+    "PAGEnFRM",
+    "PAGE_DYN",
+    "PAGEUSBS",
+    "PAGEPOWR",
+    "PAGEWdfV",
+    "PAGEiVAC",
+    "PAGESPR0",
+    "PAGE_M",
+    "PAGE_IOC",
+    "PAGE_DIS",
+    "PAGE_CX",
+    "PAGEWCE1",
+    "PAGEWCE0",
+    "PAGEUBS0",
+    "PAGEcrea",
+    "PAGEDNLD",
+    "PAGErGEN",
+    "PAGEfull",
+    "PAGESCAN",
+    "PAGER32R",
+    "PAGER32C",
+    "PAGELK16",
+    "PAGEBTTS",
+    "NOPAGED",
+    ".no_page",
+    "nonpage",
+    "PAGEopen",
+    "PAGE_INV",
+    "PAGE_ATA",
+    "PAGE_AFP",
+    "PAGEVRFB",
+    "PAGEUSB",
+    "PAGEUMDM",
+    "PAGESAN",
+    "PAGENDSW",
+    "PAGENDST",
+    "PAGENDSM",
+    "PAGENDSI",
+    "PAGENDSF",
+    "PAGENDSE",
+    "PAGENDSA",
+    "PAGEMOUC",
+    "PAGELOCK",
+    "PAGEIPMc",
+    "PAGEI042",
+    "PAGEI041",
+    "PAGEI040",
+    "PAGEI039",
+    "PAGEI038",
+    "PAGEI037",
+    "PAGEI036",
+    "PAGEI035",
+    "PAGEI034",
+    "PAGEI033",
+    "PAGEI032",
+    "PAGEI031",
+    "PAGEI030",
+    "PAGEEAWR",
+    "PAGEEADS",
+    "PAGEC",
+    "PAGEBGFX",
+    "PAGEAFD",
+    # last
+    ".secure",
+    ".DllShar",
+    ".DllDebu",
+    "HookShar",
+    "DebugDat",
+    "DebugCod",
+    "DeathAnd",
+    ".ELIOT",
+    "EWTPHOOK",
+    "FINDSHAR",
+    ".Process",
+    ".PwrMoni",
+    ".remotep",
+    ".remoteF",
+    ".HOOKVAR",
+    ".DLLShar",
+    # 2020-10-15
+    ".AAWEBS",
+    # 2022-11-23
+    ".profile",
     # m0ar
     ".rossym",
+]
+
+# https://www.hexacorn.com/blog/2016/12/15/pe-section-names-re-visited/
+CYGWIN_SECTION_NAMES = [
+    ".init",
+    ".text",
+    # ".text$* (basically, .text$<name>)",
+    ".glue_7t",
+    ".glue_7",
+    ".fini",
+    ".gcc_exc",
+    ".gcc_except_table",
+    ".autoload_text",
+    ".data",
+    ".data2",
+    # ".data$* (basically, .data$<name>)",
+    ".data_cygwin_nocopy",
+    ".rdata",
+    # ".rdata$* (basically, .rdata$<name>)",
+    ".eh_frame",
+    ".pdata",
+    ".bss",
+    "COMMON",
+    ".edata",
+    ".debug$S",
+    ".debug$T",
+    ".debug$F",
+    ".drectve",
+    ".idata",
+    ".idata$2",
+    ".idata$3",
+    ".idata$4",
+    ".idata$5",
+    ".idata$6",
+    ".idata$7",
+    ".CRT",
+    ".endjunk",
+    ".cygwin_dll_common",
+    ".rsrc",
+    # ".rsrc$* (basically, .rsrc$<name>)",
+    ".reloc",
+    ".stab",
+    ".stabstr",
+    ".debug_aranges",
+    ".debug_pubnames",
+    ".debug_info",
+    ".debug_abbrev",
+    ".debug_line",
+    ".debug_frame",
+    ".debug_str",
+    ".debug_loc",
+    ".debug_macinfo",
+    ".debug_ranges",
+    ".cygheap",
+]
+
+LINUX_ELF_SECTION_NAMES = [
+    ".btext",  # Big Endian .text section (code)
+    ".bdata",  # Big Endian .data section (data)
+    ".brdata",  # Big Endian .rdata section (Read-Only data)
+    ".bctors",  # Big Endian .ctors section (constructors)
+    ".bdtors",  # Big Endian .dtors section (destructors)
+    ".rela.btext",  # Big Endian relocation section for .text
+    ".rela.bdata",  # Big Endian relocation section for .data
+    ".rela.brdata",  # Big Endian relocation section for .rdata
+    ".rela.bctors",  # Big Endian relocation section for .ctors
+    ".rela.bdtors",  # Big Endian relocation section for .dtors
+    ".bbss",  # Big Endian section .bss (uninitialized data)
+    ".ctors",  # Little Endian .ctors section (constructors)
+    ".dtors",  # Little Endian .dtors section (destructors)
+    ".ltext",  # Little Endian .text section (code)
+    ".ldata",  # Little Endian .data section (data)
+    ".lrdata",  # Little Endian .rdata section (Read-Only data)
+    ".lctors",  # Little Endian .ctors section (constructors)
+    ".ldtors",  # Little Endian .dtors section (destructors)
+    ".rela.ltext",  # Little Endian relocation section for .text
+    ".rela.ldata",  # Little Endian relocation section for .data
+    ".rela.lrdata",  # Little Endian relocation section for .rdata
+    ".rela.lctors",  # Little Endian relocation section for .ctors
+    ".rela.ldtors",  # Little Endian relocation section for .dtors
+    ".lbss",  # Little Endian section .bss (uninitialized data)
+    # Primarily Linux-oriented, but sometimes present in PE e.g. in some old Watcom-compiled binaries
+    "begtext",  # beginning of the text section
+    "begdata",  # beginning of the data section
+    "begbss",  # beginning of the bss section
+    "endtext",  # end of the text section
+    "enddata",  # end of the data section
+    "endbss",  # end of the bss section
 ]
 
 # https://github.com/avast/pelib/blob/9ce2427424a4bd5716310ff3eef881dbc2915ff8/include/pelib/PeLibAux.h#L259

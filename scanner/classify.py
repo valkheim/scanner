@@ -24,7 +24,9 @@ from scanner.extractors.pe.authenticode import has_authenticode  # noqa
 from scanner.extractors.pe.debug import get_debug_infos
 from scanner.features_data import (
     ANTIDEBUG_IMPORTS,
+    CYGWIN_SECTION_NAMES,
     KEYBOARD_IMPORTS,
+    LINUX_ELF_SECTION_NAMES,
     SUSPICIOUS_IMPHASHES,
     SUSPICIOUS_IMPORTS,
     USUSAL_SECTION_CHARACTERISTICS,
@@ -481,6 +483,25 @@ async def feature_amount_of_suspicious_section_names(filepath: str) -> int:
     )
 
 
+def _has_section_names(filepath: str, section_names: T.List[str]) -> int:
+    if (pe := load_lief_pe(filepath)) is None:
+        return 0
+
+    for section in pe.sections:
+        if section.name in section_names:
+            return int(True)
+
+    return int(False)
+
+
+async def feature_has_cygwin_section_names(filepath: str) -> int:
+    return _has_section_names(filepath, CYGWIN_SECTION_NAMES)
+
+
+async def feature_has_linux_elf_section_names(filepath: str) -> int:
+    return _has_section_names(filepath, LINUX_ELF_SECTION_NAMES)
+
+
 async def feature_amount_of_suspicious_section_characteristics(
     filepath: str,
 ) -> int:
@@ -619,7 +640,9 @@ def handle_file(
         "amount_of_suspicious_modules": feature_amount_of_suspicious_modules,
         "rich_header_products_count": feature_rich_header_products_count,
         "rich_header_vs_distinct_count": feature_rich_header_vs_distinct_count,
-        "feature_amount_of_suspicious_section_characteristics": feature_amount_of_suspicious_section_characteristics,
+        "amount_of_suspicious_section_characteristics": feature_amount_of_suspicious_section_characteristics,
+        "has_cygwin_section_names": feature_has_cygwin_section_names,
+        "has_linux_elf_section_names": feature_has_linux_elf_section_names,
     }
     if method == "asyncio":
         if sys.version_info >= (3, 11):

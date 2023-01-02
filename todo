@@ -16,6 +16,7 @@ features:
   - average string length
   - byte distribution (vector) https://www.cisa.gov/uscert/sites/default/files/ICSJWG-Archive/QNL_Dec_21/Binary%20Analysis%20with%20Architecture%20and%20Code%20Section%20Detection%20Using%20Supervised%20Machine%20Learning%20(WiiBin).pdf
   - byte entropy (vector)
+  - check https://github.com/avast/retdec/blob/071852bbc9619342ce2409ce3241124526a3f0a0/src/fileformat/file_format/pe/pe_format.cpp#L3756
 
 * cryptography recognition
   - hardcoded values

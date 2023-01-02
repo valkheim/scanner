@@ -639,6 +639,39 @@ async def feature_get_optional_header_sizeof_heap_commit(filepath: str) -> int:
     return header["SizeOfHeapCommit"]
 
 
+async def feature_has_duplicate_section_names(filepath: str) -> int:
+    if (pe := load_lief_pe(filepath)) is None:
+        return int(False)
+
+    lst = [section.name for section in pe.sections]
+    return int(len(set(lst)) != len(lst))
+
+
+async def feature_has_unititialized_section_containing_data(
+    filepath: str,
+) -> int:
+    if (pe := load_lief_pe(filepath)) is None:
+        return int(False)
+
+    for section in pe.sections:
+        if not section.has_characteristic(
+            lief.PE.SECTION_CHARACTERISTICS.CNT_UNINITIALIZED_DATA
+        ):
+            continue
+
+        if any(
+            [
+                section.offset,
+                section.size,
+                section.sizeof_raw_data,
+                section.pointerto_raw_data,
+            ]
+        ):
+            return int(True)
+
+    return int(False)
+
+
 #####################
 #####################
 #####################
@@ -729,6 +762,8 @@ def handle_file(
         "get_optional_header_sizeof_headers": feature_get_optional_header_sizeof_headers,
         "get_optional_header_sizeof_code": feature_get_optional_header_sizeof_code,
         "get_optional_header_sizeof_heap_commit": feature_get_optional_header_sizeof_heap_commit,
+        "has_duplicate_section_names": feature_has_duplicate_section_names,
+        "has_unititialized_section_containing_data": feature_has_unititialized_section_containing_data,
     }
     if method == "asyncio":
         if sys.version_info >= (3, 11):
@@ -749,7 +784,6 @@ def handle_file(
 
 def handle_dir(dirpath: str) -> str:
     dir_start_time = time.time()
-
     feature_values = []
     feature_names = []
     filenames = os.listdir(dirpath)

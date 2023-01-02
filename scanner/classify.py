@@ -562,6 +562,81 @@ async def feature_amount_of_suspicious_modules(filepath: str) -> int:
     return ret
 
 
+async def feature_get_optional_header_major_operating_system_version(
+    filepath: str,
+) -> int:
+    if (header := get_header_infos(filepath)) is None:
+        return 0  # Must discard categorical feature
+
+    return header["MajorOperatingSystemVersion"]
+
+
+async def feature_get_optional_header_minor_operating_system_version(
+    filepath: str,
+) -> int:
+    if (header := get_header_infos(filepath)) is None:
+        return 0  # Must discard categorical feature
+
+    return header["MinorOperatingSystemVersion"]
+
+
+async def feature_get_optional_header_major_image_version(
+    filepath: str,
+) -> int:
+    if (header := get_header_infos(filepath)) is None:
+        return 0  # Must discard categorical feature
+
+    return header["MajorImageVersion"]
+
+
+async def feature_get_optional_header_minor_image_version(
+    filepath: str,
+) -> int:
+    if (header := get_header_infos(filepath)) is None:
+        return 0  # Must discard categorical feature
+
+    return header["MinorImageVersion"]
+
+
+async def feature_get_optional_header_major_linker_version(
+    filepath: str,
+) -> int:
+    if (header := get_header_infos(filepath)) is None:
+        return 0  # Must discard categorical feature
+
+    return header["MajorLinkerVersion"]
+
+
+async def feature_get_optional_header_minor_linker_version(
+    filepath: str,
+) -> int:
+    if (header := get_header_infos(filepath)) is None:
+        return 0  # Must discard categorical feature
+
+    return header["MinorLinkerVersion"]
+
+
+async def feature_get_optional_header_sizeof_code(filepath: str) -> int:
+    if (header := get_header_infos(filepath)) is None:
+        return 0  # Must discard categorical feature
+
+    return header["SizeOfCode"]
+
+
+async def feature_get_optional_header_sizeof_headers(filepath: str) -> int:
+    if (header := get_header_infos(filepath)) is None:
+        return 0  # Must discard categorical feature
+
+    return header["SizeOfHeaders"]
+
+
+async def feature_get_optional_header_sizeof_heap_commit(filepath: str) -> int:
+    if (header := get_header_infos(filepath)) is None:
+        return 0  # Must discard categorical feature
+
+    return header["SizeOfHeapCommit"]
+
+
 #####################
 #####################
 #####################
@@ -643,6 +718,15 @@ def handle_file(
         "amount_of_suspicious_section_characteristics": feature_amount_of_suspicious_section_characteristics,
         "has_cygwin_section_names": feature_has_cygwin_section_names,
         "has_linux_elf_section_names": feature_has_linux_elf_section_names,
+        "get_optional_header_major_operating_system_version": feature_get_optional_header_major_operating_system_version,
+        "get_optional_header_minor_operating_system_version": feature_get_optional_header_minor_operating_system_version,
+        "get_optional_header_major_image_version": feature_get_optional_header_major_image_version,
+        "get_optional_header_minor_image_version": feature_get_optional_header_minor_image_version,
+        "get_optional_header_major_linker_version": feature_get_optional_header_major_linker_version,
+        "get_optional_header_minor_linker_version": feature_get_optional_header_minor_linker_version,
+        "get_optional_header_sizeof_headers": feature_get_optional_header_sizeof_headers,
+        "get_optional_header_sizeof_code": feature_get_optional_header_sizeof_code,
+        "get_optional_header_sizeof_heap_commit": feature_get_optional_header_sizeof_heap_commit,
     }
     if method == "asyncio":
         if sys.version_info >= (3, 11):
@@ -808,14 +892,26 @@ def create_decision_tree(
     return classifier
 
 
-def evaluate_model(model, X, y):
+def evaluate_model(X, y):
+    from sklearn.feature_selection import SelectPercentile, f_classif
+    from sklearn.pipeline import Pipeline
+
+    model = Pipeline(
+        steps=[
+            (
+                "selector",
+                SelectPercentile(score_func=f_classif, percentile=20),
+            ),
+            ("classifier", RandomForestClassifier(n_jobs=-1)),
+        ]
+    )
     # define the evaluation procedure
     cv = RepeatedStratifiedKFold(n_repeats=3, random_state=1)
     # evaluate the model and collect the results
     scores = cross_val_score(
         model, X, y.values.ravel(), scoring="accuracy", cv=cv, n_jobs=-1
     )
-    return scores
+    return model, scores
 
 
 def create_random_forest(
@@ -829,18 +925,18 @@ def create_random_forest(
     if not os.path.exists(f"{outdir}/{label}.joblib"):
         X = pd.DataFrame(feature_values, columns=feature_names)
         y = pd.DataFrame(data_class_distribution, columns=["Binary type"])
-        classifier = RandomForestClassifier(n_jobs=-1)
-        scores = evaluate_model(classifier, X, y)
+        model, scores = evaluate_model(X, y)
         print(f"Accuracy: {np.mean(scores):.3f} ({np.std(scores):.3f})")
-        classifier.fit(X, y.values.ravel())
-        joblib.dump(classifier, f"{outdir}/{label}.joblib")
+        model.fit(X, y.values.ravel())
+        joblib.dump(model, f"{outdir}/{label}.joblib")
 
     else:
-        classifier = joblib.load(f"{outdir}/{label}.joblib")
+        model = joblib.load(f"{outdir}/{label}.joblib")
 
-    importances = classifier.feature_importances_
+    feature_names = model.named_steps["selector"].get_feature_names_out()
+    importances = model.named_steps["classifier"].feature_importances_
     save_feature_importance(outdir, feature_names, importances, label)
-    return classifier
+    return model
 
 
 def prepare_features(outdir: str, malware_dir: str, benign_dir: str):

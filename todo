@@ -1,17 +1,25 @@
 * add stdout/ with files (e.g. entropy per section)
 * create db schema from stdout files
-* local analyzer (e.g. entropy >= 7.6)
-* global analyzer
-
 
 features:
 * string recognition
   - blacklist (e.g. cmd.exe)
-  - user agent
-  - powershell encoding arguments, etc
-  - ip addresses
-  - unusual port numbers
+  - countlist (e.g. MZ)
+  - categories
+    - user agent
+    - ip addresses
+    - urls
+    - paths
+    - registry
+    - unusual port numbers
+    - powershell encoding arguments, etc
+  - average string length
+  - byte distribution (vector)
+  - byte entropy (vector)
 
 * cryptography recognition
   - hardcoded values
   - functions
+
+* enlarge dataset
+  - EMBER https://github.com/elastic/ember -- https://arxiv.org/pdf/1804.04637v2.pdf

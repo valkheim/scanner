@@ -1,5 +1,7 @@
+import errno
 import functools
 import itertools
+import time
 import typing as T
 
 import lief
@@ -9,11 +11,19 @@ from _pe.rich_header import KNOWN_PRODUCT_IDS, vs_version, vs_version_fallback
 
 
 @functools.lru_cache(maxsize=None)
-def load_pefile_pe(filepath: str) -> T.Optional[T.Any]:
+def load_pefile_pe(filepath: str, retry: int = 5) -> T.Optional[T.Any]:
+    if retry <= 0:
+        return None
+
     try:
         return pefile.PE(filepath, fast_load=True)
     except pefile.PEFormatError:
         return None
+    except IOError as e:
+        if e.errno == errno.EMFILE:  # Too many open files
+            print(e)
+            time.sleep(0.5)
+            return load_pefile_pe(filepath, retry - 1)
 
 
 @functools.lru_cache(maxsize=None)
@@ -250,14 +260,19 @@ def get_header_infos(filepath: str):
     return {
         value: getattr(pe.OPTIONAL_HEADER, value)
         for value in [
+            "Magic",
+            "MajorOperatingSystemVersion",
+            "MinorOperatingSystemVersion",
+            "MajorImageVersion",
+            "MinorImageVersion",
             "MajorLinkerVersion",
             "MinorLinkerVersion",
             "AddressOfEntryPoint",
             "SizeOfImage",
+            "SizeOfHeaders",
             "SizeOfCode",
             "BaseOfCode",
             "BaseOfData",
-            "SizeOfHeaders",
             "SizeOfStackReserve",
             "SizeOfStackCommit",
             "SizeOfHeapReserve",

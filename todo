@@ -14,12 +14,13 @@ features:
     - unusual port numbers
     - powershell encoding arguments, etc
   - average string length
-  - byte distribution (vector)
+  - byte distribution (vector) https://www.cisa.gov/uscert/sites/default/files/ICSJWG-Archive/QNL_Dec_21/Binary%20Analysis%20with%20Architecture%20and%20Code%20Section%20Detection%20Using%20Supervised%20Machine%20Learning%20(WiiBin).pdf
   - byte entropy (vector)
 
 * cryptography recognition
   - hardcoded values
   - functions
 
-* enlarge dataset
+* enlarge dataset, compare results
   - EMBER https://github.com/elastic/ember -- https://arxiv.org/pdf/1804.04637v2.pdf
+  - PE-Miner https://github.com/kmuinfosec/Pe-miner/blob/master/feature_extractor.py -- https://web.cs.ucdavis.edu/~zubair/files/raid09-zubair.pdf

@@ -14,8 +14,10 @@ import pandas as pd
 import seaborn as sns
 import uvloop
 from joblib import Parallel, delayed
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import ExtraTreesClassifier
+from sklearn.feature_selection import SelectPercentile, f_classif
 from sklearn.model_selection import RepeatedStratifiedKFold, cross_val_score
+from sklearn.pipeline import Pipeline
 from sklearn.tree import DecisionTreeClassifier, export_graphviz
 
 from scanner.extractors.entropy.entropy import get_entropy
@@ -745,13 +747,6 @@ def handle_file(
         return dict(zip(feature_extractors.keys(), feature_values))
 
 
-def yield_filepath(dirpath):
-    filenames = os.listdir(dirpath)
-    for idx, filename in enumerate(filenames):
-        filepath = os.path.join(dirpath, filename)
-        yield filepath
-
-
 def handle_dir(dirpath: str) -> str:
     dir_start_time = time.time()
 
@@ -892,19 +887,20 @@ def create_decision_tree(
     return classifier
 
 
-def evaluate_model(X, y):
-    from sklearn.feature_selection import SelectPercentile, f_classif
-    from sklearn.pipeline import Pipeline
+def evaluate_model(X, y, reduce_features: bool):
+    if reduce_features:
+        model = Pipeline(
+            steps=[
+                (
+                    "selector",
+                    SelectPercentile(score_func=f_classif, percentile=20),
+                ),
+                ("classifier", ExtraTreesClassifier(n_jobs=-1)),
+            ]
+        )
+    else:
+        model = ExtraTreesClassifier(n_jobs=-1)
 
-    model = Pipeline(
-        steps=[
-            (
-                "selector",
-                SelectPercentile(score_func=f_classif, percentile=20),
-            ),
-            ("classifier", RandomForestClassifier(n_jobs=-1)),
-        ]
-    )
     # define the evaluation procedure
     cv = RepeatedStratifiedKFold(n_repeats=3, random_state=1)
     # evaluate the model and collect the results
@@ -919,13 +915,14 @@ def create_random_forest(
     feature_values,
     feature_names,
     data_class_distribution,
+    reduce_features: bool,
     label: str,
 ) -> None:
     print("Create random forest")
     if not os.path.exists(f"{outdir}/{label}.joblib"):
         X = pd.DataFrame(feature_values, columns=feature_names)
         y = pd.DataFrame(data_class_distribution, columns=["Binary type"])
-        model, scores = evaluate_model(X, y)
+        model, scores = evaluate_model(X, y, reduce_features)
         print(f"Accuracy: {np.mean(scores):.3f} ({np.std(scores):.3f})")
         model.fit(X, y.values.ravel())
         joblib.dump(model, f"{outdir}/{label}.joblib")
@@ -933,8 +930,12 @@ def create_random_forest(
     else:
         model = joblib.load(f"{outdir}/{label}.joblib")
 
-    feature_names = model.named_steps["selector"].get_feature_names_out()
-    importances = model.named_steps["classifier"].feature_importances_
+    if reduce_features:
+        feature_names = model.named_steps["selector"].get_feature_names_out()
+        importances = model.named_steps["classifier"].feature_importances_
+    else:
+        importances = model.feature_importances_
+
     save_feature_importance(outdir, feature_names, importances, label)
     return model
 
@@ -973,6 +974,7 @@ def prepare_features(outdir: str, malware_dir: str, benign_dir: str):
 def prepare_classifier(
     output_dir,
     feature_names,
+    reduce_features: bool,
     benign_feature_values,
     malware_feature_values,
     label: str = "random_forest",
@@ -1002,6 +1004,7 @@ def prepare_classifier(
             feature_values,
             feature_names,
             data_class_distribution,
+            reduce_features,
             label,
         )
 
@@ -1044,9 +1047,11 @@ def run(args: argparse.Namespace) -> int:
         ) = prepare_features(
             args.output_dir, args.malwares_dir, args.benigns_dir
         )
+        reduce_features = True
         prepare_classifier(
             args.output_dir,
             feature_names,
+            reduce_features,
             benign_feature_values,
             malware_feature_values,
         )

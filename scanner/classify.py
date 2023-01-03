@@ -16,7 +16,7 @@ import seaborn as sns
 import uvloop
 from joblib import Parallel, delayed
 from sklearn.ensemble import ExtraTreesClassifier
-from sklearn.feature_selection import SelectPercentile, f_classif
+from sklearn.feature_selection import SelectPercentile, f_classif, VarianceThreshold
 from sklearn.model_selection import RepeatedStratifiedKFold, cross_val_score
 from sklearn.pipeline import Pipeline
 from sklearn.tree import DecisionTreeClassifier, export_graphviz
@@ -1045,6 +1045,9 @@ def create_random_forest(
 
         model = Pipeline(
             steps=[
+                ("variance_threshold_selector",
+                    VarianceThreshold(threshold=0)
+                ),
                 (
                     "selector",
                     SelectPercentile(

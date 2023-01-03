@@ -16,7 +16,7 @@ import seaborn as sns
 import uvloop
 from joblib import Parallel, delayed
 from sklearn.ensemble import ExtraTreesClassifier
-from sklearn.feature_selection import SelectPercentile, f_classif, VarianceThreshold
+from sklearn.feature_selection import SelectPercentile, VarianceThreshold, f_classif
 from sklearn.model_selection import RepeatedStratifiedKFold, cross_val_score
 from sklearn.pipeline import Pipeline
 from sklearn.tree import DecisionTreeClassifier, export_graphviz
@@ -32,6 +32,8 @@ from scanner.features_data import (
     LINUX_ELF_SECTION_NAMES,
     SUSPICIOUS_IMPHASHES,
     SUSPICIOUS_IMPORTS,
+    SUSPICIOUS_STRINGS,
+    TLDS,
     USUSAL_SECTION_CHARACTERISTICS,
     WHITELIST_SECTION_NAMES,
 )
@@ -64,24 +66,30 @@ CACHE = os.path.normpath(
 
 
 @functools.lru_cache(maxsize=None)
+def _get_file_data(filepath: str) -> bytes:
+    with open(filepath, "rb") as fh:
+        return fh.read()
+
+
+@functools.lru_cache(maxsize=None)
 def _get_strings(
     filepath: str, ascii: bool = True, unicode: bool = True
 ) -> T.List[str]:
+    # Must include stack and tight strings at some point
     strings = []
     if not ascii and not unicode:
         return strings
 
     min_length = 5
-    with open(filepath, "rb") as fh:
-        data = fh.read()
-        if ascii:
-            ascii_re = re.compile(rb"([%s]{%d,})" % (ASCII_BYTE, min_length))
-            strings += re.findall(ascii_re, data)
-        if unicode:
-            unicode_re = re.compile(
-                b"((?:[%s]\x00){%d,})" % (ASCII_BYTE, min_length)
-            )
-            strings += re.findall(unicode_re, data)
+    data = _get_file_data(filepath)
+    if ascii:
+        ascii_re = re.compile(rb"([%s]{%d,})" % (ASCII_BYTE, min_length))
+        strings += re.findall(ascii_re, data)
+    if unicode:
+        unicode_re = re.compile(
+            b"((?:[%s]\x00){%d,})" % (ASCII_BYTE, min_length)
+        )
+        strings += re.findall(unicode_re, data)
 
     return strings
 
@@ -138,6 +146,67 @@ async def feature_amount_of_port_numbers(filepath: str) -> int:
         rb"^((6553[0-5])|(655[0-2][0-9])|(65[0-4][0-9]{2})|(6[0-4][0-9]{3})|([1-5][0-9]{4})|([0-5]{0,5})|([0-9]{1,4}))$"
     )
     return len(set([s for s in strings if prog.search(s)]))
+
+
+async def feature_amount_of_suspicious_strings(filepath: str) -> int:
+    strings = _get_strings(filepath, ascii=True, unicode=True)
+    # if [s for s in strings if s.lower() in SUSPICIOUS_STRINGS] != []:
+    #    breakpoint()
+
+    return sum(
+        1 for s in strings if s in [ss.lower() for ss in SUSPICIOUS_STRINGS]
+    )
+
+
+@functools.lru_cache(maxsize=None)
+def _get_domain_names(filepath: str) -> int:
+    strings = _get_strings(filepath, ascii=True, unicode=True)
+    # From https://gist.github.com/neu5ron/66078f804f16f9bda828
+    # OR adapt https://regex101.com/r/FLA9Bv/9
+    prog = re.compile(
+        rb"^(([\da-zA-Z])([_\w-]{,62})\.){,127}(([\da-zA-Z])[_\w-]{,61})?([\da-zA-Z]\.((xn\-\-[a-zA-Z\d]+)|([a-zA-Z\d]{2,})))$"
+    )
+    return set(
+        [
+            s
+            for s in strings
+            if all(
+                [
+                    len(max(s.split(b"."), key=len)) > 6,
+                    prog.match(s),
+                    s.lower().endswith(tuple(TLDS)),
+                ]
+            )
+        ]
+    )
+
+
+async def feature_amount_of_domain_names(filepath: str) -> int:
+    return len(_get_domain_names(filepath))
+
+
+async def feature_mean_of_domain_names_entropy(filepath: str) -> int:
+    if (domain_names := _get_domain_names(filepath)) == set():
+        return 0
+
+    return np.mean([get_entropy(dn, "shannon") for dn in domain_names])
+
+
+async def feature_has_tls_list(filepath: str) -> int:
+    # DGA indicator
+    strings = _get_strings(filepath, ascii=True, unicode=True)
+    blacklist = b".data"
+    ret = set(
+        [
+            s
+            for s in strings
+            if s.lower() in TLDS and s.lower() not in blacklist
+        ]
+    )
+    if ret != set():
+        breakpoint()
+
+    return len(ret)
 
 
 async def feature_amount_of_registry_keys(filepath: str) -> int:
@@ -200,10 +269,17 @@ async def feature_amount_of_zero_stamps(filepath: str) -> int:
     return amount
 
 
-async def feature_get_shannon_entropy(filepath: str) -> int:
-    with open(filepath, "rb") as fh:
-        data = fh.read()
-        return get_entropy(data, "shannon")
+@functools.lru_cache(maxsize=None)
+def _get_entropy(filepath: str) -> int:
+    return get_entropy(_get_file_data(filepath), "shannon")
+
+
+async def feature_shannon_overall_entropy(filepath: str) -> int:
+    return _get_entropy(filepath)
+
+
+async def feature_has_suspicious_shannon_overall_entropy(filepath: str) -> int:
+    return int(_get_entropy(filepath) > 7.2)
 
 
 async def feature_has_packer(filepath: str) -> int:
@@ -642,7 +718,7 @@ async def feature_amount_of_suspicious_modules(filepath: str) -> int:
     return ret
 
 
-async def feature_get_optional_header_major_operating_system_version(
+async def feature_optional_header_major_operating_system_version(
     filepath: str,
 ) -> int:
     if (header := get_header_infos(filepath)) is None:
@@ -651,7 +727,7 @@ async def feature_get_optional_header_major_operating_system_version(
     return header["MajorOperatingSystemVersion"]
 
 
-async def feature_get_optional_header_minor_operating_system_version(
+async def feature_optional_header_minor_operating_system_version(
     filepath: str,
 ) -> int:
     if (header := get_header_infos(filepath)) is None:
@@ -660,7 +736,7 @@ async def feature_get_optional_header_minor_operating_system_version(
     return header["MinorOperatingSystemVersion"]
 
 
-async def feature_get_optional_header_major_image_version(
+async def feature_optional_header_major_image_version(
     filepath: str,
 ) -> int:
     if (header := get_header_infos(filepath)) is None:
@@ -669,7 +745,7 @@ async def feature_get_optional_header_major_image_version(
     return header["MajorImageVersion"]
 
 
-async def feature_get_optional_header_minor_image_version(
+async def feature_optional_header_minor_image_version(
     filepath: str,
 ) -> int:
     if (header := get_header_infos(filepath)) is None:
@@ -678,7 +754,7 @@ async def feature_get_optional_header_minor_image_version(
     return header["MinorImageVersion"]
 
 
-async def feature_get_optional_header_major_linker_version(
+async def feature_optional_header_major_linker_version(
     filepath: str,
 ) -> int:
     if (header := get_header_infos(filepath)) is None:
@@ -687,7 +763,7 @@ async def feature_get_optional_header_major_linker_version(
     return header["MajorLinkerVersion"]
 
 
-async def feature_get_optional_header_minor_linker_version(
+async def feature_optional_header_minor_linker_version(
     filepath: str,
 ) -> int:
     if (header := get_header_infos(filepath)) is None:
@@ -696,21 +772,21 @@ async def feature_get_optional_header_minor_linker_version(
     return header["MinorLinkerVersion"]
 
 
-async def feature_get_optional_header_sizeof_code(filepath: str) -> int:
+async def feature_optional_header_sizeof_code(filepath: str) -> int:
     if (header := get_header_infos(filepath)) is None:
         return 0  # Must discard categorical feature
 
     return header["SizeOfCode"]
 
 
-async def feature_get_optional_header_sizeof_headers(filepath: str) -> int:
+async def feature_optional_header_sizeof_headers(filepath: str) -> int:
     if (header := get_header_infos(filepath)) is None:
         return 0  # Must discard categorical feature
 
     return header["SizeOfHeaders"]
 
 
-async def feature_get_optional_header_sizeof_heap_commit(filepath: str) -> int:
+async def feature_optional_header_sizeof_heap_commit(filepath: str) -> int:
     if (header := get_header_infos(filepath)) is None:
         return 0  # Must discard categorical feature
 
@@ -773,7 +849,7 @@ def as_sync(fn, *args, **kwargs):
 
 
 def handle_file(
-    filepath: str, method: str = "asyncio"#multiprocessing"
+    filepath: str, method: str = "multiprocessing"
 ) -> T.Dict[str, int]:
     feature_extractors = {
         "amount_of_exports": feature_amount_of_exports,
@@ -792,7 +868,8 @@ def handle_file(
         "has_authenticode": feature_has_authenticode,
         "has_debug_infos": feature_has_debug_infos,
         "has_rich_header": feature_has_rich_header,
-        "shannon_entropy": feature_get_shannon_entropy,
+        "shannon_overall_entropy": feature_shannon_overall_entropy,
+        "suspicious_shannon_overall_entropy": feature_has_suspicious_shannon_overall_entropy,
         "has_native_subsystem": feature_has_native_subsystem,
         "has_gui_subsystem": feature_has_gui_subsystem,
         "has_cui_subsystem": feature_has_cui_subsystem,
@@ -833,15 +910,15 @@ def handle_file(
         "amount_of_suspicious_section_characteristics": feature_amount_of_suspicious_section_characteristics,
         "has_cygwin_section_names": feature_has_cygwin_section_names,
         "has_linux_elf_section_names": feature_has_linux_elf_section_names,
-        "get_optional_header_major_operating_system_version": feature_get_optional_header_major_operating_system_version,
-        "get_optional_header_minor_operating_system_version": feature_get_optional_header_minor_operating_system_version,
-        "get_optional_header_major_image_version": feature_get_optional_header_major_image_version,
-        "get_optional_header_minor_image_version": feature_get_optional_header_minor_image_version,
-        "get_optional_header_major_linker_version": feature_get_optional_header_major_linker_version,
-        "get_optional_header_minor_linker_version": feature_get_optional_header_minor_linker_version,
-        "get_optional_header_sizeof_headers": feature_get_optional_header_sizeof_headers,
-        "get_optional_header_sizeof_code": feature_get_optional_header_sizeof_code,
-        "get_optional_header_sizeof_heap_commit": feature_get_optional_header_sizeof_heap_commit,
+        "optional_header_major_operating_system_version": feature_optional_header_major_operating_system_version,
+        "optional_header_minor_operating_system_version": feature_optional_header_minor_operating_system_version,
+        "optional_header_major_image_version": feature_optional_header_major_image_version,
+        "optional_header_minor_image_version": feature_optional_header_minor_image_version,
+        "optional_header_major_linker_version": feature_optional_header_major_linker_version,
+        "optional_header_minor_linker_version": feature_optional_header_minor_linker_version,
+        "optional_header_sizeof_headers": feature_optional_header_sizeof_headers,
+        "optional_header_sizeof_code": feature_optional_header_sizeof_code,
+        "optional_header_sizeof_heap_commit": feature_optional_header_sizeof_heap_commit,
         "has_duplicate_section_names": feature_has_duplicate_section_names,
         "has_unititialized_section_containing_data": feature_has_unititialized_section_containing_data,
         "amount_of_urls": feature_amount_of_urls,
@@ -850,6 +927,10 @@ def handle_file(
         "amount_of_registry_keys": feature_amount_of_registry_keys,
         "amount_of_variables": feature_amount_of_variables,
         "amount_of_port_numbers": feature_amount_of_port_numbers,
+        "amount_of_domain_names": feature_amount_of_domain_names,
+        "mean_of_domain_names_entropy": feature_mean_of_domain_names_entropy,
+        "has_tld_list": feature_has_tls_list,
+        "amount_of_suspicious_strings": feature_amount_of_suspicious_strings,
     }
     if method == "asyncio":
         if sys.version_info >= (3, 11):
@@ -1045,8 +1126,9 @@ def create_random_forest(
 
         model = Pipeline(
             steps=[
-                ("variance_threshold_selector",
-                    VarianceThreshold(threshold=0)
+                (
+                    "variance_threshold_selector",
+                    VarianceThreshold(threshold=0),
                 ),
                 (
                     "selector",

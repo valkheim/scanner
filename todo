@@ -3,10 +3,8 @@
 
 features:
 * string recognition
-  - blacklist (e.g. cmd.exe)
-  - countlist (e.g. MZ)
+  - critical duplicates (e.g. MZ)
   - categories
-    - domain names (e.g. evil.org)
     - user agent
     - unusual port numbers
     - powershell encoding arguments, etc
@@ -25,3 +23,7 @@ features:
   - PE-Miner https://github.com/kmuinfosec/Pe-miner/blob/master/feature_extractor.py -- https://web.cs.ucdavis.edu/~zubair/files/raid09-zubair.pdf
   - FFRI dataset (2*400k samples)
   - AV-TEST database (not freely available?)
+
+* fix too long feature extraction
+  - Backdoor.Win32.Agent.bivm_9d72.exe (94.216 seconds)
+  - Backdoor.Win32.BlackHole, Backdoor.Win32.Bifrose families

@@ -123,6 +123,13 @@ async def feature_amount_of_registry_keys(filepath: str) -> int:
     return sum(b"HKEY_" in s for s in strings)
 
 
+async def feature_amount_of_variables(filepath: str) -> int:
+    # Matches arguments, env variables, ini variables, etc
+    strings = _get_strings(filepath, ascii=True, unicode=True)
+    prog = re.compile(rb'^([a-zA-Z]{6,})=([a-zA-Z0-9"%\. /]+){4,}?')
+    return len(set([s for s in strings if prog.match(s)]))
+
+
 async def feature_amount_of_exports(filepath: str):
     return len(get_exports(filepath) or [])
 
@@ -818,6 +825,7 @@ def handle_file(
         "amount_of_urls": feature_amount_of_urls,
         "amount_of_unique_paths": feature_amount_of_unique_paths,
         "amount_of_registry_keys": feature_amount_of_registry_keys,
+        "amount_of_variables": feature_amount_of_variables,
     }
     if method == "asyncio":
         if sys.version_info >= (3, 11):
@@ -950,7 +958,7 @@ def save_feature_importance(
         label_y = bar.get_y() + bar.get_height() / 2
         plt.text(width, label_y, s=f"{width}")
 
-    plt.xlabel("Feature importance")
+    plt.xlabel("Importances")
     plt.ylabel("Features")
     plt.savefig(
         f"{outdir}/{label}_feature_importance.png", bbox_inches="tight"

@@ -6,13 +6,9 @@ features:
   - blacklist (e.g. cmd.exe)
   - countlist (e.g. MZ)
   - categories
+    - domain names (e.g. evil.org)
     - user agent
-    - ip addresses
-    - urls
-    - paths
-    - registry
     - unusual port numbers
-    - env variables
     - powershell encoding arguments, etc
   - string length distribution
 * byte distribution (vector) https://www.cisa.gov/uscert/sites/default/files/ICSJWG-Archive/QNL_Dec_21/Binary%20Analysis%20with%20Architecture%20and%20Code%20Section%20Detection%20Using%20Supervised%20Machine%20Learning%20(WiiBin).pdf

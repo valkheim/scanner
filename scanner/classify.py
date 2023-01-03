@@ -95,12 +95,16 @@ async def feature_amount_of_unicode_strings(filepath: str) -> int:
 
 
 async def feature_mean_of_ascii_string_lengths(filepath: str) -> int:
-    strings = _get_strings(filepath, ascii=True, unicode=False)
+    if (strings := _get_strings(filepath, ascii=True, unicode=False)) == []:
+        return 0
+
     return np.mean([len(string) for string in strings])
 
 
 async def feature_mean_of_unicode_string_lengths(filepath: str) -> int:
-    strings = _get_strings(filepath, ascii=False, unicode=True)
+    if (strings := _get_strings(filepath, ascii=False, unicode=True)) == []:
+        return 0
+
     return np.mean([len(string) for string in strings])
 
 
@@ -109,11 +113,29 @@ async def feature_amount_of_urls(filepath: str) -> int:
     return sum(b"https" in s or b"http" in s for s in strings)
 
 
+async def feature_amount_of_ipv4(filepath: str) -> int:
+    # May capture version strings (e.g. 1.0.0.0)
+    strings = _get_strings(filepath, ascii=True, unicode=True)
+    # Will match ipv4 with optional :<port> suffix
+    prog = re.compile(
+        rb"^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}(:((6553[0-5])|(655[0-2][0-9])|(65[0-4][0-9]{2})|(6[0-4][0-9]{3})|([1-5][0-9]{4})|([0-5]{0,5})|([0-9]{1,4})))?$"
+    )
+    return len(set([s for s in strings if prog.match(s)]))
+
+
 async def feature_amount_of_unique_paths(filepath: str) -> int:
     strings = _get_strings(filepath, ascii=True, unicode=True)
     # Drive letter and UNC paths
     prog = re.compile(
         rb'^(?:[a-z]:|\\\\[a-z0-9_.$]+\\[a-z0-9_.$]+)\\(?:[^\\/:*?"<>|\r\n]+\\)*[^\\/:*?"<>|\r\n]*$'
+    )
+    return len(set([s for s in strings if prog.search(s)]))
+
+
+async def feature_amount_of_port_numbers(filepath: str) -> int:
+    strings = _get_strings(filepath, ascii=True, unicode=True)
+    prog = re.compile(
+        rb"^((6553[0-5])|(655[0-2][0-9])|(65[0-4][0-9]{2})|(6[0-4][0-9]{3})|([1-5][0-9]{4})|([0-5]{0,5})|([0-9]{1,4}))$"
     )
     return len(set([s for s in strings if prog.search(s)]))
 
@@ -751,7 +773,7 @@ def as_sync(fn, *args, **kwargs):
 
 
 def handle_file(
-    filepath: str, method: str = "multiprocessing"
+    filepath: str, method: str = "asyncio"#multiprocessing"
 ) -> T.Dict[str, int]:
     feature_extractors = {
         "amount_of_exports": feature_amount_of_exports,
@@ -823,9 +845,11 @@ def handle_file(
         "has_duplicate_section_names": feature_has_duplicate_section_names,
         "has_unititialized_section_containing_data": feature_has_unititialized_section_containing_data,
         "amount_of_urls": feature_amount_of_urls,
+        "amount_of_ipv4": feature_amount_of_ipv4,
         "amount_of_unique_paths": feature_amount_of_unique_paths,
         "amount_of_registry_keys": feature_amount_of_registry_keys,
         "amount_of_variables": feature_amount_of_variables,
+        "amount_of_port_numbers": feature_amount_of_port_numbers,
     }
     if method == "asyncio":
         if sys.version_info >= (3, 11):

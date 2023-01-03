@@ -12,11 +12,13 @@ features:
     - paths
     - registry
     - unusual port numbers
+    - env variables
     - powershell encoding arguments, etc
-  - average string length
-  - byte distribution (vector) https://www.cisa.gov/uscert/sites/default/files/ICSJWG-Archive/QNL_Dec_21/Binary%20Analysis%20with%20Architecture%20and%20Code%20Section%20Detection%20Using%20Supervised%20Machine%20Learning%20(WiiBin).pdf
-  - byte entropy (vector)
-  - check https://github.com/avast/retdec/blob/071852bbc9619342ce2409ce3241124526a3f0a0/src/fileformat/file_format/pe/pe_format.cpp#L3756
+  - string length distribution
+* byte distribution (vector) https://www.cisa.gov/uscert/sites/default/files/ICSJWG-Archive/QNL_Dec_21/Binary%20Analysis%20with%20Architecture%20and%20Code%20Section%20Detection%20Using%20Supervised%20Machine%20Learning%20(WiiBin).pdf
+* byte entropy (vector)
+* TrID file type
+* check https://github.com/avast/retdec/blob/071852bbc9619342ce2409ce3241124526a3f0a0/src/fileformat/file_format/pe/pe_format.cpp#L3756
 
 * cryptography recognition
   - hardcoded values
@@ -25,3 +27,5 @@ features:
 * enlarge dataset, compare results
   - EMBER https://github.com/elastic/ember -- https://arxiv.org/pdf/1804.04637v2.pdf
   - PE-Miner https://github.com/kmuinfosec/Pe-miner/blob/master/feature_extractor.py -- https://web.cs.ucdavis.edu/~zubair/files/raid09-zubair.pdf
+  - FFRI dataset (2*400k samples)
+  - AV-TEST database (not freely available?)

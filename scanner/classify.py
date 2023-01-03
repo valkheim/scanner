@@ -1,6 +1,7 @@
 import argparse
 import asyncio
 import datetime
+import functools
 import os
 import sys
 import time
@@ -62,16 +63,64 @@ CACHE = os.path.normpath(
 )
 
 
-async def feature_amount_of_ascii_strings(filepath: str) -> int:
+@functools.lru_cache(maxsize=None)
+def _get_strings(
+    filepath: str, ascii: bool = True, unicode: bool = True
+) -> T.List[str]:
+    strings = []
+    if not ascii and not unicode:
+        return strings
+
+    min_length = 5
     with open(filepath, "rb") as fh:
-        ascii_re = re.compile(rb"([%s]{%d,})" % (ASCII_BYTE, 5))
-        return sum(1 for _ in re.finditer(ascii_re, fh.read()))
+        data = fh.read()
+        if ascii:
+            ascii_re = re.compile(rb"([%s]{%d,})" % (ASCII_BYTE, min_length))
+            strings += re.findall(ascii_re, data)
+        if unicode:
+            unicode_re = re.compile(
+                b"((?:[%s]\x00){%d,})" % (ASCII_BYTE, min_length)
+            )
+            strings += re.findall(unicode_re, data)
+
+    return strings
+
+
+async def feature_amount_of_ascii_strings(filepath: str) -> int:
+    return len(_get_strings(filepath, ascii=True, unicode=False))
 
 
 async def feature_amount_of_unicode_strings(filepath: str) -> int:
-    with open(filepath, "rb") as fh:
-        unicode_re = re.compile(b"((?:[%s]\x00){%d,})" % (ASCII_BYTE, 5))
-        return sum(1 for _ in re.finditer(unicode_re, fh.read()))
+    return len(_get_strings(filepath, ascii=False, unicode=True))
+
+
+async def feature_mean_of_ascii_string_lengths(filepath: str) -> int:
+    strings = _get_strings(filepath, ascii=True, unicode=False)
+    return np.mean([len(string) for string in strings])
+
+
+async def feature_mean_of_unicode_string_lengths(filepath: str) -> int:
+    strings = _get_strings(filepath, ascii=False, unicode=True)
+    return np.mean([len(string) for string in strings])
+
+
+async def feature_amount_of_urls(filepath: str) -> int:
+    strings = _get_strings(filepath, ascii=True, unicode=True)
+    return sum(b"https" in s or b"http" in s for s in strings)
+
+
+async def feature_amount_of_unique_paths(filepath: str) -> int:
+    strings = _get_strings(filepath, ascii=True, unicode=True)
+    # Drive letter and UNC paths
+    prog = re.compile(
+        rb'^(?:[a-z]:|\\\\[a-z0-9_.$]+\\[a-z0-9_.$]+)\\(?:[^\\/:*?"<>|\r\n]+\\)*[^\\/:*?"<>|\r\n]*$'
+    )
+    return len(set([s for s in strings if prog.search(s)]))
+
+
+async def feature_amount_of_registry_keys(filepath: str) -> int:
+    strings = _get_strings(filepath, ascii=True, unicode=True)
+    return sum(b"HKEY_" in s for s in strings)
 
 
 async def feature_amount_of_exports(filepath: str):
@@ -706,6 +755,8 @@ def handle_file(
         "amount_of_zero_stamps": feature_amount_of_zero_stamps,
         "amount_of_ascii_strings": feature_amount_of_ascii_strings,
         "amount_of_unicode_strings": feature_amount_of_unicode_strings,
+        "mean_of_ascii_string_lengths": feature_mean_of_ascii_string_lengths,
+        "mean_of_unicode_string_lengths": feature_mean_of_unicode_string_lengths,
         "has_zero_checksum": feature_has_zero_checksum,
         "has_valid_checksum": feature_has_valid_checksum,
         "has_packer": feature_has_packer,
@@ -764,6 +815,9 @@ def handle_file(
         "get_optional_header_sizeof_heap_commit": feature_get_optional_header_sizeof_heap_commit,
         "has_duplicate_section_names": feature_has_duplicate_section_names,
         "has_unititialized_section_containing_data": feature_has_unititialized_section_containing_data,
+        "amount_of_urls": feature_amount_of_urls,
+        "amount_of_unique_paths": feature_amount_of_unique_paths,
+        "amount_of_registry_keys": feature_amount_of_registry_keys,
     }
     if method == "asyncio":
         if sys.version_info >= (3, 11):
@@ -850,7 +904,11 @@ def create_correlation_matrix(outdir: str) -> None:
     malware_feature_values = joblib.load(
         f"{outdir}/malware_feature_values.joblib"
     )
-    feature_names = joblib.load(f"{outdir}/feature_names.joblib")
+    if os.path.exists(f"{outdir}/reduced_feature_names.joblib"):
+        feature_names = joblib.load(f"{outdir}/reduced_feature_names.joblib")
+    else:
+        feature_names = joblib.load(f"{outdir}/feature_names.joblib")
+
     df = pd.DataFrame(
         benign_feature_values + malware_feature_values, columns=feature_names
     )
@@ -868,9 +926,25 @@ def save_feature_importance(
     importances: T.List[int],
     label: str,
 ) -> None:
+    feature_importance = {
+        name: score for name, score in zip(feature_names, importances)
+    }
+    feature_importance = {
+        k: v
+        for k, v in sorted(
+            feature_importance.items(), key=lambda item: item[1], reverse=True
+        )
+    }
+    for k, v in feature_importance.items():
+        print(f"{v:.3f}: {k}")
+
     print(f"Save '{label}' feature importance")
     plt.figure(figsize=(10, 18))
-    bars = plt.barh(feature_names, importances, height=0.75)
+    bars = plt.barh(
+        [k for k in feature_importance.keys()],
+        [v for v in feature_importance.values()],
+        height=0.75,
+    )
     for bar in bars:
         width = bar.get_width()
         label_y = bar.get_y() + bar.get_height() / 2
@@ -921,29 +995,6 @@ def create_decision_tree(
     return classifier
 
 
-def evaluate_model(X, y, reduce_features: bool):
-    if reduce_features:
-        model = Pipeline(
-            steps=[
-                (
-                    "selector",
-                    SelectPercentile(score_func=f_classif, percentile=20),
-                ),
-                ("classifier", ExtraTreesClassifier(n_jobs=-1)),
-            ]
-        )
-    else:
-        model = ExtraTreesClassifier(n_jobs=-1)
-
-    # define the evaluation procedure
-    cv = RepeatedStratifiedKFold(n_repeats=3, random_state=1)
-    # evaluate the model and collect the results
-    scores = cross_val_score(
-        model, X, y.values.ravel(), scoring="accuracy", cv=cv, n_jobs=-1
-    )
-    return model, scores
-
-
 def create_random_forest(
     outdir: str,
     feature_values,
@@ -956,7 +1007,26 @@ def create_random_forest(
     if not os.path.exists(f"{outdir}/{label}.joblib"):
         X = pd.DataFrame(feature_values, columns=feature_names)
         y = pd.DataFrame(data_class_distribution, columns=["Binary type"])
-        model, scores = evaluate_model(X, y, reduce_features)
+        percentile = 20
+        if not reduce_features:
+            percentile = 100
+
+        model = Pipeline(
+            steps=[
+                (
+                    "selector",
+                    SelectPercentile(
+                        score_func=f_classif, percentile=percentile
+                    ),
+                ),
+                ("classifier", ExtraTreesClassifier(n_jobs=-1)),
+            ]
+        )
+
+        cv = RepeatedStratifiedKFold(n_repeats=3, random_state=1)
+        scores = cross_val_score(
+            model, X, y.values.ravel(), scoring="accuracy", cv=cv, n_jobs=-1
+        )
         print(f"Accuracy: {np.mean(scores):.3f} ({np.std(scores):.3f})")
         model.fit(X, y.values.ravel())
         joblib.dump(model, f"{outdir}/{label}.joblib")
@@ -964,11 +1034,13 @@ def create_random_forest(
     else:
         model = joblib.load(f"{outdir}/{label}.joblib")
 
+    importances = model.named_steps["classifier"].feature_importances_
     if reduce_features:
         feature_names = model.named_steps["selector"].get_feature_names_out()
-        importances = model.named_steps["classifier"].feature_importances_
-    else:
-        importances = model.feature_importances_
+        if not os.path.exists(f"{outdir}/reduced_feature_names.joblib"):
+            joblib.dump(
+                feature_names, f"{outdir}/reduced_feature_names.joblib"
+            )
 
     save_feature_importance(outdir, feature_names, importances, label)
     return model
@@ -1064,6 +1136,9 @@ def predict(classifier, test, verbose: bool = False):
 
 
 def run(args: argparse.Namespace) -> int:
+    # Config
+    reduce_features = False
+
     if args.dry:
         features = handle_file(args.dry, "asyncio")
         print(
@@ -1081,7 +1156,6 @@ def run(args: argparse.Namespace) -> int:
         ) = prepare_features(
             args.output_dir, args.malwares_dir, args.benigns_dir
         )
-        reduce_features = True
         prepare_classifier(
             args.output_dir,
             feature_names,

@@ -11,7 +11,7 @@ from _pe.rich_header import KNOWN_PRODUCT_IDS, vs_version, vs_version_fallback
 
 
 @functools.lru_cache(maxsize=None)
-def load_pefile_pe(filepath: str, retry: int = 5) -> T.Optional[T.Any]:
+def load_pefile_pe(filepath: str, retry: int = 10) -> T.Optional[T.Any]:
     if retry <= 0:
         return None
 
@@ -22,7 +22,7 @@ def load_pefile_pe(filepath: str, retry: int = 5) -> T.Optional[T.Any]:
     except IOError as e:
         if e.errno == errno.EMFILE:  # Too many open files
             print(e)
-            time.sleep(0.5)
+            time.sleep(2)
             return load_pefile_pe(filepath, retry - 1)
 
 

@@ -33,9 +33,29 @@ from scanner.features_data import ANTIDEBUG_IMPORTS  # noqa
 from scanner.features_data import CYGWIN_SECTION_NAMES  # noqa
 from scanner.features_data import KEYBOARD_IMPORTS  # noqa
 from scanner.features_data import LINUX_ELF_SECTION_NAMES  # noqa
+from scanner.features_data import SUSPICIOUS_AGENTS  # noqa
+from scanner.features_data import SUSPICIOUS_AVS  # noqa
+from scanner.features_data import SUSPICIOUS_DOMAIN_NAMES  # noqa
+from scanner.features_data import SUSPICIOUS_DOS_STUB_STRINGS  # noqa
+from scanner.features_data import SUSPICIOUS_EXTENSIONS  # noqa
+from scanner.features_data import SUSPICIOUS_FILENAMES  # noqa
+from scanner.features_data import SUSPICIOUS_FMT_STRINGS  # noqa
+from scanner.features_data import SUSPICIOUS_FOLDERS  # noqa
+from scanner.features_data import SUSPICIOUS_GUID  # noqa
 from scanner.features_data import SUSPICIOUS_IMPHASHES  # noqa
 from scanner.features_data import SUSPICIOUS_IMPORTS  # noqa
+from scanner.features_data import SUSPICIOUS_KNOWN_FOLDERS  # noqa
+from scanner.features_data import SUSPICIOUS_OIDS  # noqa
+from scanner.features_data import SUSPICIOUS_PRIVILEGES  # noqa
+from scanner.features_data import SUSPICIOUS_PROCESSES  # noqa
+from scanner.features_data import SUSPICIOUS_PROTOCOLS  # noqa
+from scanner.features_data import SUSPICIOUS_REGEXS  # noqa
+from scanner.features_data import SUSPICIOUS_REGISTRY  # noqa
+from scanner.features_data import SUSPICIOUS_SANDBOX_PIDS  # noqa
+from scanner.features_data import SUSPICIOUS_SDDL  # noqa
+from scanner.features_data import SUSPICIOUS_SIDS  # noqa
 from scanner.features_data import SUSPICIOUS_STRINGS  # noqa
+from scanner.features_data import SUSPICIOUS_UTILITIES  # noqa
 from scanner.features_data import TLDS  # noqa
 from scanner.features_data import USUSAL_SECTION_CHARACTERISTICS  # noqa
 from scanner.features_data import WHITELIST_SECTION_NAMES  # noqa
@@ -147,11 +167,109 @@ async def feature_amount_of_port_numbers(filepath: str) -> int:
     return len(set([s for s in strings if prog.search(s)]))
 
 
-async def feature_amount_of_suspicious_strings(filepath: str) -> int:
+def _feature_amount_of_strings_in(
+    filepath: str, blacklist: T.List[str]
+) -> int:
     strings = _get_strings(filepath, ascii=True, unicode=True)
     return sum(
-        1 for s in strings if s in [ss.lower() for ss in SUSPICIOUS_STRINGS]
+        1 for s in strings if s.lower() in [ss.lower() for ss in blacklist]
     )
+
+
+async def feature_amount_of_suspicious_av_strings(filepath: str) -> int:
+    return _feature_amount_of_strings_in(filepath, SUSPICIOUS_AVS)
+
+
+async def feature_amount_of_suspicious_regexs_strings(filepath: str) -> int:
+    return _feature_amount_of_strings_in(filepath, SUSPICIOUS_REGEXS)
+
+
+async def feature_amount_of_suspicious_privileges_strings(
+    filepath: str,
+) -> int:
+    return _feature_amount_of_strings_in(filepath, SUSPICIOUS_PRIVILEGES)
+
+
+async def feature_amount_of_suspicious_processes_strings(filepath: str) -> int:
+    return _feature_amount_of_strings_in(filepath, SUSPICIOUS_PROCESSES)
+
+
+async def feature_amount_of_suspicious_oids_strings(filepath: str) -> int:
+    return _feature_amount_of_strings_in(filepath, SUSPICIOUS_OIDS)
+
+
+async def feature_amount_of_suspicious_agents_strings(filepath: str) -> int:
+    return _feature_amount_of_strings_in(filepath, SUSPICIOUS_AGENTS)
+
+
+async def feature_amount_of_suspicious_extensions_strings(
+    filepath: str,
+) -> int:
+    return _feature_amount_of_strings_in(filepath, SUSPICIOUS_EXTENSIONS)
+
+
+async def feature_amount_of_suspicious_sddl_strings(filepath: str) -> int:
+    return _feature_amount_of_strings_in(filepath, SUSPICIOUS_SDDL)
+
+
+async def feature_amount_of_suspicious_known_folders_strings(
+    filepath: str,
+) -> int:
+    return _feature_amount_of_strings_in(filepath, SUSPICIOUS_KNOWN_FOLDERS)
+
+
+async def feature_amount_of_suspicious_guid_strings(filepath: str) -> int:
+    return _feature_amount_of_strings_in(filepath, SUSPICIOUS_GUID)
+
+
+async def feature_amount_of_suspicious_registry_strings(filepath: str) -> int:
+    return _feature_amount_of_strings_in(filepath, SUSPICIOUS_REGISTRY)
+
+
+async def feature_amount_of_suspicious_folders_strings(filepath: str) -> int:
+    return _feature_amount_of_strings_in(filepath, SUSPICIOUS_FOLDERS)
+
+
+async def feature_amount_of_suspicious_sandbox_pids_strings(
+    filepath: str,
+) -> int:
+    return _feature_amount_of_strings_in(filepath, SUSPICIOUS_SANDBOX_PIDS)
+
+
+async def feature_amount_of_suspicious_domain_names_strings(
+    filepath: str,
+) -> int:
+    return _feature_amount_of_strings_in(filepath, SUSPICIOUS_DOMAIN_NAMES)
+
+
+async def feature_amount_of_suspicious_fmt_strings_strings(
+    filepath: str,
+) -> int:
+    return _feature_amount_of_strings_in(filepath, SUSPICIOUS_FMT_STRINGS)
+
+
+async def feature_amount_of_suspicious_filenames_strings(filepath: str) -> int:
+    return _feature_amount_of_strings_in(filepath, SUSPICIOUS_FILENAMES)
+
+
+async def feature_amount_of_suspicious_sids_strings(filepath: str) -> int:
+    return _feature_amount_of_strings_in(filepath, SUSPICIOUS_SIDS)
+
+
+async def feature_amount_of_suspicious_protocols_strings(filepath: str) -> int:
+    return _feature_amount_of_strings_in(filepath, SUSPICIOUS_PROTOCOLS)
+
+
+async def feature_amount_of_suspicious_utilities_strings(filepath: str) -> int:
+    return _feature_amount_of_strings_in(filepath, SUSPICIOUS_UTILITIES)
+
+
+async def feature_amount_of_suspicious_dos_stub_strings(filepath: str) -> int:
+    return _feature_amount_of_strings_in(filepath, SUSPICIOUS_DOS_STUB_STRINGS)
+
+
+async def feature_amount_of_suspicious_strings(filepath: str) -> int:
+    return _feature_amount_of_strings_in(filepath, SUSPICIOUS_STRINGS)
 
 
 @functools.lru_cache(maxsize=32)
@@ -925,6 +1043,26 @@ def handle_file(
         "amount_of_domain_names": feature_amount_of_domain_names,
         "mean_of_domain_names_entropy": feature_mean_of_domain_names_entropy,
         "has_tld_list": feature_has_tld_list,
+        "amount_of_suspicious_av_strings": feature_amount_of_suspicious_av_strings,
+        "amount_of_suspicious_regexs_strings": feature_amount_of_suspicious_regexs_strings,
+        "amount_of_suspicious_privileges_strings": feature_amount_of_suspicious_privileges_strings,
+        "amount_of_suspicious_processes_strings": feature_amount_of_suspicious_processes_strings,
+        "amount_of_suspicious_oids_strings": feature_amount_of_suspicious_oids_strings,
+        "amount_of_suspicious_agents_strings": feature_amount_of_suspicious_agents_strings,
+        "amount_of_suspicious_extensions_strings": feature_amount_of_suspicious_extensions_strings,
+        "amount_of_suspicious_sddl_strings": feature_amount_of_suspicious_sddl_strings,
+        "amount_of_suspicious_known_folders_strings": feature_amount_of_suspicious_known_folders_strings,
+        "amount_of_suspicious_guid_strings": feature_amount_of_suspicious_guid_strings,
+        "amount_of_suspicious_registry_strings": feature_amount_of_suspicious_registry_strings,
+        "amount_of_suspicious_folders_strings": feature_amount_of_suspicious_folders_strings,
+        "amount_of_suspicious_sandbox_pids_strings": feature_amount_of_suspicious_sandbox_pids_strings,
+        "amount_of_suspicious_domain_names_strings": feature_amount_of_suspicious_domain_names_strings,
+        "amount_of_suspicious_fmt_strings_strings": feature_amount_of_suspicious_fmt_strings_strings,
+        "amount_of_suspicious_filenames_strings": feature_amount_of_suspicious_filenames_strings,
+        "amount_of_suspicious_sids_strings": feature_amount_of_suspicious_sids_strings,
+        "amount_of_suspicious_protocols_strings": feature_amount_of_suspicious_protocols_strings,
+        "amount_of_suspicious_utilities_strings": feature_amount_of_suspicious_utilities_strings,
+        "amount_of_suspicious_dos_stub_strings": feature_amount_of_suspicious_dos_stub_strings,
         "amount_of_suspicious_strings": feature_amount_of_suspicious_strings,
     }
     if method == "asyncio":

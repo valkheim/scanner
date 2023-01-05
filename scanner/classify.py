@@ -242,8 +242,7 @@ async def feature_amount_of_sections(filepath: str) -> int:
 
 async def feature_has_zero_checksum(filepath: str) -> int:
     hdr = get_header_infos(filepath)
-    has_checksum = hasattr(hdr, "CheckSum")
-    if has_checksum:
+    if "CheckSum" in hdr:
         return int(hdr["CheckSum"] == 0)
 
     return 0
@@ -437,11 +436,13 @@ async def feature_has_suspicious_SizeOfImage(filepath: str) -> int:
 async def feature_has_suspicious_size_of_optional_hdr(filepath: str) -> int:
     optional_header_size = get_size_of_optional_header(filepath)
     # pe studio allows the 0xe0 - 0x104 range
-    return not any(
-        [
-            optional_header_size == 0xE0,  # PE32
-            optional_header_size == 0xF0,  # PE32+
-        ]
+    return int(
+        not any(
+            [
+                optional_header_size == 0xE0,  # PE32
+                optional_header_size == 0xF0,  # PE32+
+            ]
+        )
     )
 
 
@@ -528,7 +529,7 @@ async def feature_amount_of_high_entropy_sections(filepath: str) -> int:
     if (sections := get_sections(filepath)) is None:
         return 0
 
-    return sum(1 for _, _, _, _, _, entropy in sections if 0 < entropy < 7)
+    return sum(1 for _, _, _, _, _, entropy in sections if entropy > 7)
 
 
 async def feature_amount_of_shared_sections(filepath: str) -> int:

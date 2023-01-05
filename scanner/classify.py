@@ -4,6 +4,7 @@ import datetime
 import functools
 import glob
 import os
+import re
 import sys
 import time
 import typing as T
@@ -17,7 +18,9 @@ import seaborn as sns
 import uvloop
 from joblib import Parallel, delayed
 from sklearn.ensemble import ExtraTreesClassifier
-from sklearn.feature_selection import SelectPercentile, VarianceThreshold, f_classif
+from sklearn.feature_selection import SelectPercentile  # noqa
+from sklearn.feature_selection import VarianceThreshold  # noqa
+from sklearn.feature_selection import f_classif  # noqa
 from sklearn.model_selection import RepeatedStratifiedKFold, cross_val_score
 from sklearn.pipeline import Pipeline
 from sklearn.tree import DecisionTreeClassifier, export_graphviz
@@ -26,25 +29,25 @@ from scanner.extractors.entropy.entropy import get_entropy
 from scanner.extractors.pe.authenticode import get_lief_binary  # noqa
 from scanner.extractors.pe.authenticode import has_authenticode  # noqa
 from scanner.extractors.pe.debug import get_debug_infos
-from scanner.features_data import (
-    ANTIDEBUG_IMPORTS,
-    CYGWIN_SECTION_NAMES,
-    KEYBOARD_IMPORTS,
-    LINUX_ELF_SECTION_NAMES,
-    SUSPICIOUS_IMPHASHES,
-    SUSPICIOUS_IMPORTS,
-    SUSPICIOUS_STRINGS,
-    TLDS,
-    USUSAL_SECTION_CHARACTERISTICS,
-    WHITELIST_SECTION_NAMES,
-)
+from scanner.features_data import ANTIDEBUG_IMPORTS  # noqa
+from scanner.features_data import CYGWIN_SECTION_NAMES  # noqa
+from scanner.features_data import KEYBOARD_IMPORTS  # noqa
+from scanner.features_data import LINUX_ELF_SECTION_NAMES  # noqa
+from scanner.features_data import SUSPICIOUS_IMPHASHES  # noqa
+from scanner.features_data import SUSPICIOUS_IMPORTS  # noqa
+from scanner.features_data import SUSPICIOUS_STRINGS  # noqa
+from scanner.features_data import TLDS  # noqa
+from scanner.features_data import USUSAL_SECTION_CHARACTERISTICS  # noqa
+from scanner.features_data import WHITELIST_SECTION_NAMES  # noqa
 
-sys.path.append(
-    os.path.join(os.path.dirname(__file__), "extractors", "pe")
+sys.path.append(  # noqa
+    os.path.join(os.path.dirname(__file__), "extractors", "pe")  # noqa
 )  # noqa
-import re
 
+from scanner.extractors.pe._pe import get_exports  # noqa
+from scanner.extractors.pe._pe import get_header_infos  # noqa
 from scanner.extractors.pe._pe import get_imports  # noqa
+from scanner.extractors.pe._pe import get_optional_header  # noqa
 from scanner.extractors.pe._pe import get_packers  # noqa
 from scanner.extractors.pe._pe import get_resources  # noqa
 from scanner.extractors.pe._pe import get_rich_header  # noqa
@@ -52,13 +55,8 @@ from scanner.extractors.pe._pe import get_sections  # noqa
 from scanner.extractors.pe._pe import get_size_of_optional_header  # noqa
 from scanner.extractors.pe._pe import get_stamps  # noqa
 from scanner.extractors.pe._pe import get_subsystem  # noqa
-from scanner.extractors.pe._pe import (  # noqa
-    get_exports,
-    get_header_infos,
-    get_optional_header,
-    has_valid_checksum,
-    load_lief_pe,
-)
+from scanner.extractors.pe._pe import has_valid_checksum  # noqa
+from scanner.extractors.pe._pe import load_lief_pe  # noqa
 
 ASCII_BYTE = rb" !\"#\$%&\'\(\)\*\+,-\./0123456789:;<=>\?@ABCDEFGHIJKLMNOPQRSTUVWXYZ\[\]\^_`abcdefghijklmnopqrstuvwxyz\{\|\}\\\~\t"
 CACHE = os.path.normpath(

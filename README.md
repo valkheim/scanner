@@ -2,8 +2,7 @@
 
 This is a PE file static analysis engine.
 
-
-## Install && run
+## Install
 
 This is a poetry-managed python project.
 
@@ -39,7 +38,39 @@ Press CTRL+C to quit
  * Debugger PIN: 119-810-875
 ```
 
+## GUI and CLI modes
+
+You can use either the **gui** or the **cli** mode:
+
+```console
+/scanner$ poetry run scanner cli --help
+usage: scanner cli [-h] [--file FILE] [--dir DIR] [--hash HASH] [--last]
+
+The scanner command line mode
+
+optional arguments:
+  -h, --help   show this help message and exit
+  --file FILE  Scan a file by path
+  --dir DIR    Scan a directory by path
+  --hash HASH  Retrieve scan results by hash
+  --last       Retrieve the last analyzed files
+```
+
+```console
+/scanner$ poetry run scanner gui --help
+usage: scanner gui [-h]
+
+The scanner GUI mode
+
+optional arguments:
+  -h, --help  show this help message and exit
+```
+
 ## Classification
+
+I used the scanner as feature extractors to build an original decision tree classifier.
+It evolved into a random forest classifer with its own set of features (~100 features so far).
+This part details the generation and use of the classification model.
 
 ### Create classification model
 

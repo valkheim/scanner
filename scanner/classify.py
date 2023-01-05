@@ -21,6 +21,7 @@ from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.feature_selection import SelectPercentile  # noqa
 from sklearn.feature_selection import VarianceThreshold  # noqa
 from sklearn.feature_selection import f_classif  # noqa
+from sklearn.metrics import RocCurveDisplay
 from sklearn.model_selection import RepeatedStratifiedKFold, cross_val_score
 from sklearn.pipeline import Pipeline
 from sklearn.tree import DecisionTreeClassifier, export_graphviz
@@ -712,7 +713,9 @@ async def feature_has_wx_section(filepath: str) -> int:
     return int(False)
 
 
-async def feature_has_suspicious_size_of_initialied_data(filepath: str) -> int:
+async def feature_has_suspicious_size_of_initialized_data(
+    filepath: str,
+) -> int:
     if (pe := load_lief_pe(filepath)) is None:
         return int(False)
 
@@ -1009,7 +1012,7 @@ def handle_file(
         "has_last_section_executable": feature_has_last_section_executable,
         "has_many_executable_sections": feature_has_many_executable_sections,
         "has_wx_section": feature_has_wx_section,
-        "has_suspicious_size_of_initialied_data": feature_has_suspicious_size_of_initialied_data,
+        "has_suspicious_size_of_initialied_data": feature_has_suspicious_size_of_initialized_data,
         "has_suspicious_imphash": feature_has_suspicious_imphash,
         "has_size_of_code_greater_than_size_of_code_sections": feature_has_size_of_code_greater_than_size_of_code_sections,
         "amount_of_suspicious_section_names": feature_amount_of_suspicious_section_names,
@@ -1244,6 +1247,16 @@ def create_decision_tree(
     return classifier
 
 
+def save_roc_curve(outdir, label, model, X, y):
+    print(f"Save '{label}' ROC curve")
+    RocCurveDisplay.from_estimator(model, X, y.values.ravel())
+    plt.plot([0, 1], [0, 1], ":k", label="random")  # add diagonal line
+    plt.title(f"ROC curve for classifying with {label}")
+    plt.legend()
+    plt.show(block=False)
+    plt.savefig(f"{outdir}/{label}_roc.png")
+
+
 def create_random_forest(
     outdir: str,
     feature_values,
@@ -1280,8 +1293,14 @@ def create_random_forest(
         scores = cross_val_score(
             model, X, y.values.ravel(), scoring="accuracy", cv=cv, n_jobs=-1
         )
-        print(f"Accuracy: {np.mean(scores):.3f} ({np.std(scores):.3f})")
         model.fit(X, y.values.ravel())
+        print(
+            f"Accuracy (from scores): {np.mean(scores):.3f} ({np.std(scores):.3f})"
+        )
+        print(
+            f"Accuracy (from clf score): {model.score(X, y.values.ravel()):.3f}"
+        )
+        save_roc_curve(outdir, label, model, X, y)
         joblib.dump(model, f"{outdir}/{label}.joblib")
 
     else:

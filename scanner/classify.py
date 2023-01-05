@@ -151,9 +151,6 @@ async def feature_amount_of_port_numbers(filepath: str) -> int:
 
 async def feature_amount_of_suspicious_strings(filepath: str) -> int:
     strings = _get_strings(filepath, ascii=True, unicode=True)
-    # if [s for s in strings if s.lower() in SUSPICIOUS_STRINGS] != []:
-    #    breakpoint()
-
     return sum(
         1 for s in strings if s in [ss.lower() for ss in SUSPICIOUS_STRINGS]
     )
@@ -193,21 +190,19 @@ async def feature_mean_of_domain_names_entropy(filepath: str) -> int:
     return np.mean([get_entropy(dn, "shannon") for dn in domain_names])
 
 
-async def feature_has_tls_list(filepath: str) -> int:
+async def feature_has_tld_list(filepath: str) -> int:
     # DGA indicator
     strings = _get_strings(filepath, ascii=True, unicode=True)
     blacklist = b".data"
-    ret = set(
-        [
-            s
-            for s in strings
-            if s.lower() in TLDS and s.lower() not in blacklist
-        ]
+    return len(
+        set(
+            [
+                s
+                for s in strings
+                if s.lower() in TLDS and s.lower() not in blacklist
+            ]
+        )
     )
-    if ret != set():
-        breakpoint()
-
-    return len(ret)
 
 
 async def feature_amount_of_registry_keys(filepath: str) -> int:
@@ -931,7 +926,7 @@ def handle_file(
         "amount_of_port_numbers": feature_amount_of_port_numbers,
         "amount_of_domain_names": feature_amount_of_domain_names,
         "mean_of_domain_names_entropy": feature_mean_of_domain_names_entropy,
-        "has_tld_list": feature_has_tls_list,
+        "has_tld_list": feature_has_tld_list,
         "amount_of_suspicious_strings": feature_amount_of_suspicious_strings,
     }
     if method == "asyncio":

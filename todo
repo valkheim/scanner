@@ -5,6 +5,7 @@ features:
 * string recognition
   - critical duplicates (e.g. MZ)
   - categories
+    - explode suspicious strings as individual binary features
     - user agent
     - unusual port numbers
     - powershell encoding arguments, etc

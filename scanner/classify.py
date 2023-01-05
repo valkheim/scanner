@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import datetime
 import functools
+import glob
 import os
 import sys
 import time
@@ -954,13 +955,15 @@ def handle_dir(dirpath: str) -> str:
     dir_start_time = time.time()
     feature_values = []
     feature_names = []
-    filenames = os.listdir(dirpath)
-    filenames_length = len(filenames)
-    for idx, filename in enumerate(filenames):
-        filepath = os.path.join(dirpath, filename)
-        if os.path.isdir(filepath):
-            continue
-
+    filepaths = set(
+        [
+            f
+            for f in glob.iglob(dirpath + "**/**", recursive=True)
+            if lief.PE.is_pe(f)
+        ]
+    )
+    filenames_length = len(filepaths)
+    for idx, filepath in enumerate(filepaths):
         print(
             f"[{idx + 1}/{filenames_length}] Handle {os.path.abspath(filepath)}",
             end=" ",

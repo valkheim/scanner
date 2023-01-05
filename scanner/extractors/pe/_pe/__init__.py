@@ -10,7 +10,7 @@ from _pe.packers import PACKER_SECTIONS
 from _pe.rich_header import KNOWN_PRODUCT_IDS, vs_version, vs_version_fallback
 
 
-@functools.lru_cache(maxsize=None)
+@functools.lru_cache(maxsize=32)
 def load_pefile_pe(filepath: str, retry: int = 10) -> T.Optional[T.Any]:
     if retry <= 0:
         return None
@@ -26,7 +26,7 @@ def load_pefile_pe(filepath: str, retry: int = 10) -> T.Optional[T.Any]:
             return load_pefile_pe(filepath, retry - 1)
 
 
-@functools.lru_cache(maxsize=None)
+@functools.lru_cache(maxsize=32)
 def load_lief_pe(filepath: str) -> T.Optional[T.Any]:
     if not lief.PE.is_pe(filepath):
         return None
@@ -34,7 +34,7 @@ def load_lief_pe(filepath: str) -> T.Optional[T.Any]:
     return lief.PE.parse(filepath)
 
 
-@functools.lru_cache(maxsize=None)
+@functools.lru_cache(maxsize=32)
 def get_sections(filepath: str) -> T.Optional[T.List[T.Any]]:
     if (pe := load_pefile_pe(filepath)) is None:
         return None
@@ -52,7 +52,7 @@ def get_sections(filepath: str) -> T.Optional[T.List[T.Any]]:
     ]
 
 
-@functools.lru_cache(maxsize=None)
+@functools.lru_cache(maxsize=32)
 def get_packers(filepath) -> T.Optional[T.List[str]]:
     if (sections := get_sections(filepath)) is None:
         return []
@@ -68,7 +68,7 @@ def get_packers(filepath) -> T.Optional[T.List[str]]:
     return list(set(candidates))
 
 
-@functools.lru_cache(maxsize=None)
+@functools.lru_cache(maxsize=32)
 def get_imports(filepath: str) -> T.Optional[T.List[T.Any]]:
     if (pe := load_pefile_pe(filepath)) is None:
         return None
@@ -86,7 +86,7 @@ def get_imports(filepath: str) -> T.Optional[T.List[T.Any]]:
     ]
 
 
-@functools.lru_cache(maxsize=None)
+@functools.lru_cache(maxsize=32)
 def get_imports_hash(filepath: str) -> T.Optional[str]:
     if (pe := load_pefile_pe(filepath)) is None:
         return None
@@ -100,7 +100,7 @@ def get_imports_hash(filepath: str) -> T.Optional[str]:
     return pe.get_imphash()
 
 
-@functools.lru_cache(maxsize=None)
+@functools.lru_cache(maxsize=32)
 def get_exports(filepath: str) -> T.Optional[T.List[T.Any]]:
     if (pe := load_pefile_pe(filepath)) is None:
         return None
@@ -152,7 +152,7 @@ def get_stamps(filepath: str) -> T.Optional[T.Dict[str, str]]:
     return acc
 
 
-@functools.lru_cache(maxsize=None)
+@functools.lru_cache(maxsize=32)
 def get_rich_header(filepath: str) -> T.Optional[T.List[T.Any]]:
     if (pe := load_pefile_pe(filepath)) is None:
         return None
@@ -198,7 +198,7 @@ def _resource(pe, r, parents=[], acc=[]):
             return _resource(pe, entry, parents, acc)
 
 
-@functools.lru_cache(maxsize=None)
+@functools.lru_cache(maxsize=32)
 def get_resources(filepath: str) -> T.Optional[T.List[T.Any]]:
     if (pe := load_pefile_pe(filepath)) is None:
         return None
@@ -214,7 +214,7 @@ def get_resources(filepath: str) -> T.Optional[T.List[T.Any]]:
     ]
 
 
-@functools.lru_cache(maxsize=None)
+@functools.lru_cache(maxsize=32)
 def get_resources_section(filepath):
     if (pe := load_pefile_pe(filepath)) is None:
         return None
@@ -228,7 +228,7 @@ def get_resources_section(filepath):
     return pe.DIRECTORY_ENTRY_RESOURCE
 
 
-@functools.lru_cache(maxsize=None)
+@functools.lru_cache(maxsize=32)
 def get_optional_header(filepath: str):
     if (pe := load_pefile_pe(filepath)) is None:
         return None
@@ -236,7 +236,7 @@ def get_optional_header(filepath: str):
     return pe.OPTIONAL_HEADER
 
 
-@functools.lru_cache(maxsize=None)
+@functools.lru_cache(maxsize=32)
 def get_size_of_optional_header(filepath: str) -> int:
     """
     Size of the OptionalHeader AND the data directories which follows this header.
@@ -252,7 +252,7 @@ def get_size_of_optional_header(filepath: str) -> int:
     return pe.header.sizeof_optional_header
 
 
-@functools.lru_cache(maxsize=None)
+@functools.lru_cache(maxsize=32)
 def get_header_infos(filepath: str):
     if (pe := load_pefile_pe(filepath)) is None:
         return None
@@ -283,7 +283,7 @@ def get_header_infos(filepath: str):
     }
 
 
-@functools.lru_cache(maxsize=None)
+@functools.lru_cache(maxsize=32)
 def get_subsystem(filepath: str):
     if (pe := load_pefile_pe(filepath)) is None:
         return None, None
@@ -300,7 +300,7 @@ def get_subsystem(filepath: str):
     return pe.OPTIONAL_HEADER.Subsystem, None
 
 
-@functools.lru_cache(maxsize=None)
+@functools.lru_cache(maxsize=32)
 def has_valid_checksum(filepath: str) -> bool:
     if (pe := load_pefile_pe(filepath)) is None:
         return False

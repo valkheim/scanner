@@ -64,13 +64,13 @@ CACHE = os.path.normpath(
 )
 
 
-@functools.lru_cache(maxsize=None)
+@functools.lru_cache(maxsize=32)
 def _get_file_data(filepath: str) -> bytes:
     with open(filepath, "rb") as fh:
         return fh.read()
 
 
-@functools.lru_cache(maxsize=None)
+@functools.lru_cache(maxsize=32)
 def _get_strings(
     filepath: str, ascii: bool = True, unicode: bool = True
 ) -> T.List[str]:
@@ -154,7 +154,7 @@ async def feature_amount_of_suspicious_strings(filepath: str) -> int:
     )
 
 
-@functools.lru_cache(maxsize=None)
+@functools.lru_cache(maxsize=32)
 def _get_domain_names(filepath: str) -> int:
     strings = _get_strings(filepath, ascii=True, unicode=True)
     # From https://gist.github.com/neu5ron/66078f804f16f9bda828
@@ -262,7 +262,7 @@ async def feature_amount_of_zero_stamps(filepath: str) -> int:
     return amount
 
 
-@functools.lru_cache(maxsize=None)
+@functools.lru_cache(maxsize=32)
 def _get_entropy(filepath: str) -> int:
     return get_entropy(_get_file_data(filepath), "shannon")
 
@@ -938,6 +938,7 @@ def handle_file(
             return asyncio.run(collect_features(feature_extractors, filepath))
 
     elif method == "multiprocessing":
+        # https://stackoverflow.com/a/67891917
         feature_values = Parallel(n_jobs=-1)(
             delayed(as_sync)(v, filepath) for v in feature_extractors.values()
         )

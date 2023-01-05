@@ -28,3 +28,5 @@ features:
 * fix too long feature extraction
   - Backdoor.Win32.Agent.bivm_9d72.exe (94.216 seconds)
   - Backdoor.Win32.BlackHole, Backdoor.Win32.Bifrose families
+
+* joblib memory caching vs default lru caching?

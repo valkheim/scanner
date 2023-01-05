@@ -61,11 +61,15 @@ def get_arguments() -> argparse.Namespace:
 
     cli_parser.add_argument("--dry", help="Test features")
 
-    return parser.parse_args()
+    return parser, parser.parse_args()
 
 
 def main():
-    args = get_arguments()
+    parser, args = get_arguments()
+    if not hasattr(args, "run"):
+        parser.print_help()
+        return 2
+
     return args.run(args)
 
 

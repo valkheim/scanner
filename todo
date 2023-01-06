@@ -2,6 +2,8 @@
 * create db schema from stdout files
 
 features:
+* explode has debug info (test RelWithDebInfo, etc)
+* section chi-2 value
 * string recognition
   - critical duplicates (e.g. MZ)
   - categories

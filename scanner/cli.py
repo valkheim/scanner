@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+import lief
 
 from scanner.analyse import (
     get_last_results,
@@ -10,7 +11,10 @@ from scanner.analyse import (
 )
 
 
-def handle_file(filepath: str) -> int:
+def handle_file(filepath: str) -> None:
+    if not os.path.isfile(filepath) or not lief.PE.is_pe(filepath):
+        return
+
     print(f"Handle {filepath}")
     with open(filepath, "rb") as fh:
         filename = filepath.split(os.sep)[-1]
@@ -19,7 +23,7 @@ def handle_file(filepath: str) -> int:
         run_extractors(hash)
         get_results(hash)
 
-    return 0
+    return
 
 
 def handle_dir(dirpath: str) -> str:

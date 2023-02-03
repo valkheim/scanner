@@ -78,8 +78,10 @@ from scanner.extractors.pe._pe import get_stamps  # noqa
 from scanner.extractors.pe._pe import get_subsystem  # noqa
 from scanner.extractors.pe._pe import has_valid_checksum  # noqa
 from scanner.extractors.pe._pe import load_lief_pe  # noqa
+from scanner.extractors.strings._strings import get_strings # noqa
+from scanner.extractors.strings._strings import get_ipv4 # noqa
+from scanner.extractors.strings._strings import get_domain_names # noqa
 
-ASCII_BYTE = rb" !\"#\$%&\'\(\)\*\+,-\./0123456789:;<=>\?@ABCDEFGHIJKLMNOPQRSTUVWXYZ\[\]\^_`abcdefghijklmnopqrstuvwxyz\{\|\}\\\~\t"
 CACHE = os.path.normpath(
     os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "cache")
 )
@@ -91,68 +93,39 @@ def _get_file_data(filepath: str) -> bytes:
         return fh.read()
 
 
-@functools.lru_cache(maxsize=32)
-def _get_strings(
-    filepath: str, ascii: bool = True, unicode: bool = True
-) -> T.List[str]:
-    # Must include stack and tight strings at some point
-    strings = []
-    if not ascii and not unicode:
-        return strings
-
-    min_length = 5
-    data = _get_file_data(filepath)
-    if ascii:
-        ascii_re = re.compile(rb"([%s]{%d,})" % (ASCII_BYTE, min_length))
-        strings += re.findall(ascii_re, data)
-    if unicode:
-        unicode_re = re.compile(
-            b"((?:[%s]\x00){%d,})" % (ASCII_BYTE, min_length)
-        )
-        strings += re.findall(unicode_re, data)
-
-    return strings
-
-
 async def feature_amount_of_ascii_strings(filepath: str) -> int:
-    return len(_get_strings(filepath, ascii=True, unicode=False))
+    return len(get_strings(filepath, ascii=True, unicode=False))
 
 
 async def feature_amount_of_unicode_strings(filepath: str) -> int:
-    return len(_get_strings(filepath, ascii=False, unicode=True))
+    return len(get_strings(filepath, ascii=False, unicode=True))
 
 
 async def feature_mean_of_ascii_string_lengths(filepath: str) -> int:
-    if (strings := _get_strings(filepath, ascii=True, unicode=False)) == []:
+    if (strings := get_strings(filepath, ascii=True, unicode=False)) == []:
         return 0
 
     return np.mean([len(string) for string in strings])
 
 
 async def feature_mean_of_unicode_string_lengths(filepath: str) -> int:
-    if (strings := _get_strings(filepath, ascii=False, unicode=True)) == []:
+    if (strings := get_strings(filepath, ascii=False, unicode=True)) == []:
         return 0
 
     return np.mean([len(string) for string in strings])
 
 
 async def feature_amount_of_urls(filepath: str) -> int:
-    strings = _get_strings(filepath, ascii=True, unicode=True)
+    strings = get_strings(filepath, ascii=True, unicode=True)
     return sum(b"https" in s or b"http" in s for s in strings)
 
 
 async def feature_amount_of_ipv4(filepath: str) -> int:
-    # May capture version strings (e.g. 1.0.0.0)
-    strings = _get_strings(filepath, ascii=True, unicode=True)
-    # Will match ipv4 with optional :<port> suffix
-    prog = re.compile(
-        rb"^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}(:((6553[0-5])|(655[0-2][0-9])|(65[0-4][0-9]{2})|(6[0-4][0-9]{3})|([1-5][0-9]{4})|([0-5]{0,5})|([0-9]{1,4})))?$"
-    )
-    return len(set([s for s in strings if prog.match(s)]))
+    return len(get_ipv4(filepath))
 
 
 async def feature_amount_of_unique_paths(filepath: str) -> int:
-    strings = _get_strings(filepath, ascii=True, unicode=True)
+    strings = get_strings(filepath, ascii=True, unicode=True)
     # Drive letter and UNC paths
     prog = re.compile(
         rb'^(?:[a-z]:|\\\\[a-z0-9_.$]+\\[a-z0-9_.$]+)\\(?:[^\\/:*?"<>|\r\n]+\\)*[^\\/:*?"<>|\r\n]*$'
@@ -161,7 +134,7 @@ async def feature_amount_of_unique_paths(filepath: str) -> int:
 
 
 async def feature_amount_of_port_numbers(filepath: str) -> int:
-    strings = _get_strings(filepath, ascii=True, unicode=True)
+    strings = get_strings(filepath, ascii=True, unicode=True)
     prog = re.compile(
         rb"^((6553[0-5])|(655[0-2][0-9])|(65[0-4][0-9]{2})|(6[0-4][0-9]{3})|([1-5][0-9]{4})|([0-5]{0,5})|([0-9]{1,4}))$"
     )
@@ -171,7 +144,7 @@ async def feature_amount_of_port_numbers(filepath: str) -> int:
 def _feature_amount_of_strings_in(
     filepath: str, blacklist: T.List[str]
 ) -> int:
-    strings = _get_strings(filepath, ascii=True, unicode=True)
+    strings = get_strings(filepath, ascii=True, unicode=True)
     return sum(
         1 for s in strings if s.lower() in [ss.lower() for ss in blacklist]
     )
@@ -273,35 +246,12 @@ async def feature_amount_of_suspicious_strings(filepath: str) -> int:
     return _feature_amount_of_strings_in(filepath, SUSPICIOUS_STRINGS)
 
 
-@functools.lru_cache(maxsize=32)
-def _get_domain_names(filepath: str) -> int:
-    strings = _get_strings(filepath, ascii=True, unicode=True)
-    # From https://gist.github.com/neu5ron/66078f804f16f9bda828
-    # OR adapt https://regex101.com/r/FLA9Bv/9
-    prog = re.compile(
-        rb"^(([\da-zA-Z])([_\w-]{,62})\.){,127}(([\da-zA-Z])[_\w-]{,61})?([\da-zA-Z]\.((xn\-\-[a-zA-Z\d]+)|([a-zA-Z\d]{2,})))$"
-    )
-    return set(
-        [
-            s
-            for s in strings
-            if all(
-                [
-                    len(max(s.split(b"."), key=len)) > 6,
-                    prog.match(s),
-                    s.lower().endswith(tuple(TLDS)),
-                ]
-            )
-        ]
-    )
-
-
 async def feature_amount_of_domain_names(filepath: str) -> int:
-    return len(_get_domain_names(filepath))
+    return len(get_domain_names(filepath))
 
 
 async def feature_mean_of_domain_names_entropy(filepath: str) -> int:
-    if (domain_names := _get_domain_names(filepath)) == set():
+    if (domain_names := get_domain_names(filepath)) == set():
         return 0
 
     return np.mean([get_entropy(dn, "shannon") for dn in domain_names])
@@ -309,7 +259,7 @@ async def feature_mean_of_domain_names_entropy(filepath: str) -> int:
 
 async def feature_has_tld_list(filepath: str) -> int:
     # DGA indicator
-    strings = _get_strings(filepath, ascii=True, unicode=True)
+    strings = get_strings(filepath, ascii=True, unicode=True)
     blacklist = b".data"
     return len(
         set(
@@ -323,13 +273,13 @@ async def feature_has_tld_list(filepath: str) -> int:
 
 
 async def feature_amount_of_registry_keys(filepath: str) -> int:
-    strings = _get_strings(filepath, ascii=True, unicode=True)
+    strings = get_strings(filepath, ascii=True, unicode=True)
     return sum(b"HKEY_" in s for s in strings)
 
 
 async def feature_amount_of_variables(filepath: str) -> int:
     # Matches arguments, env variables, ini variables, etc
-    strings = _get_strings(filepath, ascii=True, unicode=True)
+    strings = get_strings(filepath, ascii=True, unicode=True)
     prog = re.compile(rb'^([a-zA-Z]{6,})=([a-zA-Z0-9"%\. /]+){4,}?')
     return len(set([s for s in strings if prog.match(s)]))
 
@@ -382,16 +332,16 @@ async def feature_amount_of_zero_stamps(filepath: str) -> int:
 
 
 @functools.lru_cache(maxsize=32)
-def _get_entropy(filepath: str) -> int:
+def _get_shannon_entropy(filepath: str) -> int:
     return get_entropy(_get_file_data(filepath), "shannon")
 
 
 async def feature_shannon_overall_entropy(filepath: str) -> int:
-    return _get_entropy(filepath)
+    return _get_shannon_entropy(filepath)
 
 
 async def feature_has_suspicious_shannon_overall_entropy(filepath: str) -> int:
-    return int(_get_entropy(filepath) > 7.2)
+    return int(_get_shannon_entropy(filepath) > 7.2)
 
 
 async def feature_has_packer(filepath: str) -> int:
@@ -949,7 +899,7 @@ async def feature_has_unititialized_section_containing_data(
 
 async def collect_features(feature_extractors, filepath):
     tasks = []
-    for k, v in feature_extractors.items():
+    for _, v in feature_extractors.items():
         tasks.append(asyncio.create_task(v(filepath)))
 
     feature_values = await asyncio.gather(*tasks)

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "scanner"
-version = "0.1.0"
+version = "0.2.0"
 description = ""
 authors = ["Your Name <you@example.com>"]
 
@@ -15,12 +15,6 @@ Flask = "^2.2.2"
 pefile = "^2022.5.30"
 pdbparse = "^1.5"
 lief = "^0.12.3"
-pandas = "^1.5.2"
-scikit-learn = "^1.2.0"
-joblib = "^1.2.0"
-seaborn = "0.11"
-numpy = "^1.24.0"
-uvloop = "^0.17.0"
 
 [tool.poetry.dev-dependencies]
 types-Flask = "^1.1.6"

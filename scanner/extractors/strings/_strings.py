@@ -1,6 +1,6 @@
 import functools
-import typing as T
 import re
+import typing as T
 
 ASCII_BYTE = rb" !\"#\$%&\'\(\)\*\+,-\./0123456789:;<=>\?@ABCDEFGHIJKLMNOPQRSTUVWXYZ\[\]\^_`abcdefghijklmnopqrstuvwxyz\{\|\}\\\~\t"
 # https://tld-list.com/tlds-from-a-z
@@ -3384,6 +3384,108 @@ TLDS_BLACKLIST = [
     "Texture.Data",
     "Picture.Data",
 ]
+SUSPICIOUS_AVS = [
+    "threatexpert",
+    "emsisoft",
+    "rising",
+    "pctools",
+    "norman",
+    "k7computing",
+    "ikarus",
+    "hacksoft",
+    "gdata",
+    "fortinet",
+    "ewido",
+    "clamav",
+    "comodo",
+    "quickheal",
+    "avira",
+    "avast",
+    "esafe",
+    "ahnlab",
+    "centralcommand",
+    "drweb",
+    "grisoft",
+    "nod32",
+    "f-prot",
+    "jotti",
+    "computerassociates",
+    "networkassociates",
+    "etrust",
+    "panda",
+    "sophos",
+    "trendmicro",
+    "defender",
+    "rootkit",
+    "spyware",
+    "Kaspersky",
+    "BitDefender",
+    "Dr.Web",
+    "Kaspersky Antivirus",
+    "Nod32 Antivirus 2.x",
+    "Ewido Security Suite",
+    "McAfee VirusScan",
+    "Panda Antivirus/Firewall",
+    "Symantec/Norton",
+    "PC-cillin Antivirus",
+    "F-Secure",
+    "Kingsoft ShaDu",
+    "NOD32 Antivirus",
+    "Rising Antivirus",
+    "Jiangmin Antivirus",
+    "360 ShaDu",
+    "360 Safe",
+    "McAfee AV",
+    "Bitdefender AV",
+    "Norton Symantec AV",
+    "F-Secure AV",
+    "AhnLab V3 Internet Security 8",
+    "Avast AntiVirus",
+    "Avira Antivirus",
+    "Eset Nod32 Scanner",
+    "F-Secure Gatekeeper Handler Starter",
+    "F-Secure Recognizer",
+    "F-Secure HIPS",
+    "F-Secure Gatekeeper",
+    "F-Secure Filter",
+    "WinDefend",
+    "OutpostFirewall",
+    "McAfee Framework Service",
+    "Panda Antivirus",
+    "ZoneAlarm Client",
+    "Zone Labs Client",
+    "windefender",
+    r"Software\Microsoft\Windows\CurrentVersion\Uninstall\Kingsoft Antivirus",
+    r"Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Kingsoft Antivirus",
+    r"Software\Microsoft\Windows\CurrentVersion\Uninstall\360SD",
+    r"Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\360SD",
+    r"Software\Microsoft\Windows\CurrentVersion\Uninstall\Kingsoft PC Doctor",
+    r"Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Kingsoft PC Doctor",
+    r"Software\Microsoft\Windows\CurrentVersion\Uninstall\360 Internet Security",
+    r"Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\360 Internet Security",
+    r"Software\Microsoft\Windows\CurrentVersion\Uninstall\Kingsoft Internet Security 9",
+    r"Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Kingsoft Internet Security 9",
+    r"Software\Microsoft\Windows\CurrentVersion\Uninstall\Kingsoft Internet Security U SP1",
+    r"Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Kingsoft Internet Security U SP1",
+    r"Software\Microsoft\Windows\CurrentVersion\Uninstall\{D1ABBC6D-4C7B-4D6B-9B50-F79399DD3652}",
+    r"Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\{D1ABBC6D-4C7B-4D6B-9B50-F79399DD3652}",
+    r"Software\Microsoft\Windows\CurrentVersion\Uninstall\{AC54C7CC-3868-4942-BD2E-1BCA2519C881}",
+    r"Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\{AC54C7CC-3868-4942-BD2E-1BCA2519C881}",
+    # Trend Micro
+    r"Trend Micro\UniClient",
+    r"plugins\plugUpdater.dll",
+    r"UiFrmwrk\uiUpdateTray.exe",
+    r"Trend Micro Titanium",
+    r"Trend Micro Client Framework",
+    r"uiSeAgnt.exe",
+    # IBM Trusteer
+    r"RapportSetup.exe",
+    # K
+    "kavdumps",
+    # Avast
+    r"*\Program Files*\*AV*T Sof*are\Av*",
+]
+
 
 @functools.lru_cache(maxsize=32)
 def _get_file_data(filepath: str) -> bytes:
@@ -3413,6 +3515,22 @@ def get_strings(
 
     return strings
 
+
+def get_blacklisted_strings(
+    filepath: str, blacklist: T.List[str]
+) -> T.List[str]:
+    strings = get_strings(filepath, ascii=True, unicode=True)
+    found_in_strings = [
+        s.decode()
+        for s in strings
+        if s.lower().decode() in "".join(blacklist).lower()
+    ]
+    found_in_lst = [
+        s for s in blacklist if s.lower() in b"".join(strings).lower().decode()
+    ]
+    return found_in_strings + found_in_lst
+
+
 def get_ipv4(filepath: str) -> int:
     # May capture version strings (e.g. 1.0.0.0)
     strings = get_strings(filepath, ascii=True, unicode=True)
@@ -3421,6 +3539,7 @@ def get_ipv4(filepath: str) -> int:
         rb"^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}(:((6553[0-5])|(655[0-2][0-9])|(65[0-4][0-9]{2})|(6[0-4][0-9]{3})|([1-5][0-9]{4})|([0-5]{0,5})|([0-9]{1,4})))?$"
     )
     return set([s for s in strings if prog.match(s)])
+
 
 @functools.lru_cache(maxsize=32)
 def get_domain_names(filepath: str) -> int:
@@ -3439,7 +3558,7 @@ def get_domain_names(filepath: str) -> int:
                     len(max(s.split(b"."), key=len)) > 6,
                     prog.match(s),
                     s.lower().endswith(tuple(TLDS)),
-                    s not in TLDS_BLACKLIST
+                    s not in TLDS_BLACKLIST,
                 ]
             )
         ]

@@ -21,9 +21,14 @@ def run_process(
         **kwargs,
     )
     o, e = p.communicate(write)
+    # breakpoint()
     end = time.perf_counter()
+    status = "KO"
+    if p.returncode == 0:
+        status = "OK"
+
     print(
-        f"Process {args[0].split(os.sep)[-1]} ran in {round(end-start, 2)} second(s)"
+        f"[{status}] Process {args[0].split(os.sep)[-1]} ran in {round(end-start, 2)} second(s)"
     )
     return p.returncode, o, e
 

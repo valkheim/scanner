@@ -3,6 +3,8 @@
     -moz-box-sizing: border-box;
     box-sizing: border-box;
 
+    --header-height: 6vh;
+
     --black: #191A19;
     --white: #ddd;
     --green: #519872;
@@ -100,6 +102,11 @@ dl {
     border-bottom: none;
     /* I need a higher z-index here because of the scroll-over effect. */
     z-index: 4;
+    display: flex;
+    height: var(--header-height);
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .home-menu .pure-menu-heading {
@@ -133,8 +140,7 @@ dl {
 }
 
 .header {
-    height: 6vh;
-    color: var(--white);
+    height: var(--header-height);
 }
 
 main {

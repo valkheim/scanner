@@ -2,10 +2,10 @@
 
 import sys
 
-from _pe import ANTIDEBUG_IMPORTS, in_imports_list
+from _pe import KEYBOARD_IMPORTS, in_imports_list
 
 if __name__ == "__main__":
-    if (imports := in_imports_list(sys.argv[1], ANTIDEBUG_IMPORTS)) is None:
+    if (imports := in_imports_list(sys.argv[1], KEYBOARD_IMPORTS)) is None:
         sys.exit(1)
 
     if imports == []:

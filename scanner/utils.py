@@ -3,6 +3,8 @@ import subprocess
 import time
 import typing as T
 
+import colorama
+
 
 def run_process(
     args: T.List[str],
@@ -23,9 +25,9 @@ def run_process(
     o, e = p.communicate(write)
     # breakpoint()
     end = time.perf_counter()
-    status = "KO"
+    status = f"{colorama.Fore.RED}KO{colorama.Style.RESET_ALL}"
     if p.returncode == 0:
-        status = "OK"
+        status = f"{colorama.Fore.GREEN}OK{colorama.Style.RESET_ALL}"
 
     print(
         f"[{status}] Process {args[0].split(os.sep)[-1]} ran in {round(end-start, 2)} second(s)"

@@ -15,7 +15,9 @@ Flask = "^2.2.2"
 pefile = "^2022.5.30"
 pdbparse = "^1.5"
 lief = "^0.12.3"
-colorama = "^0.4.6"
+colorama = "0.4.5"
+flare-capa = "^5.0.0"
+setuptools = "^67.6.1"
 
 [tool.poetry.dev-dependencies]
 types-Flask = "^1.1.6"

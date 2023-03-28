@@ -24,6 +24,10 @@ def get_arguments() -> argparse.Namespace:
         "--last", action="store_true", help="Retrieve the last analyzed files"
     )
 
+    if not sys.argv[2:]:
+        if sys.argv[1:] and sys.argv[1] == "cli":
+            sys.argv.append("--help")
+
     return parser, parser.parse_args()
 
 

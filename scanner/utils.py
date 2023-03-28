@@ -37,6 +37,10 @@ def run_process(
 
 def yield_files(from_dir: str) -> T.Iterator[str]:
     for root, _, files in os.walk(from_dir):
+        parts = root.split(os.sep)
+        if any([x.startswith("_") for x in parts]):
+            continue
+
         for file in files:
             yield os.path.join(os.path.basename(root), file)
 

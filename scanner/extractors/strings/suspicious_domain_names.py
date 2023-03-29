@@ -2,11 +2,13 @@
 
 import sys
 
-from _strings import SUSPICIOUS_AVS, get_blacklisted_strings
+from _strings import SUSPICIOUS_DOMAIN_NAMES, get_blacklisted_strings
 
 if __name__ == "__main__":
     if (
-        strings := get_blacklisted_strings(sys.argv[1], SUSPICIOUS_AVS)
+        strings := get_blacklisted_strings(
+            sys.argv[1], SUSPICIOUS_DOMAIN_NAMES
+        )
     ) is None:
         sys.exit(1)
 

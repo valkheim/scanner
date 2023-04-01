@@ -157,6 +157,12 @@ main>div {
     padding: 2vh 5vw;
 }
 
+@media (min-width: 48em) {
+    main>div {
+        padding: 2vh 10vw;
+    }
+}
+
 .upload,
 .results {
     display: flex;

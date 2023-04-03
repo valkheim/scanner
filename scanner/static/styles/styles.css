@@ -145,8 +145,12 @@ dl {
 
 .header-logo {
     vertical-align: middle;
-    margin-left: 1em;
+    margin: 0 .4em;
     width: 32px;
+}
+
+.header-label {
+    vertical-align: middle;
 }
 
 main {

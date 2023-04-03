@@ -113,9 +113,11 @@ def handle_submitted_file(f, filename: str) -> str:
 def get_results(hash: str) -> T.Dict[str, T.Any]:
     results_dir = get_results_dir()
     dst_dir = os.path.join(results_dir, hash)
+    extractors_data = get_extractors_data(dst_dir)
+    sorted_extractors_data = dict(sorted(extractors_data.items()))
     return {
         "infos": read_result_infos(hash),
-        "extractors": get_extractors_data(dst_dir),
+        "extractors": sorted_extractors_data,
     }
 
 

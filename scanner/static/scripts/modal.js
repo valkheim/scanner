@@ -9,6 +9,6 @@ document.querySelectorAll(".open-modal").forEach((e) => {
 
 window.onload = () => {
     const modalImg = document.querySelector(".modal .modal__inner img")
-    const id = Math.floor(Math.random() * 4)
+    const id = Math.floor(Math.random() * 7)
     modalImg.src = `/static/img/sleepy/${id}.gif`
 }

@@ -5879,7 +5879,7 @@ def get_strings(
     ascii: bool = True,
     unicode: bool = True,
     offsets: bool = False,
-) -> T.List[str]:
+) -> T.List[T.Any]:
     # Must include stack and tight strings at some point
     strings_info = []
     if not ascii and not unicode:

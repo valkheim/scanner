@@ -14,7 +14,10 @@
 <body>
     <div class="header">
         <div class="home-menu pure-menu pure-menu-horizontal pure-menu-fixed">
+        <div>
+            <img class="header-logo" src="{{ url_for('static',filename='img/favicon.ico')}}" />
             <a class="pure-menu-heading" href="/">File scanner</a>
+        </div>
             <ul class="pure-menu-list">
                 <li class="pure-menu-item"><a href="/#upload" class="pure-menu-link">Upload</a></li>
                 {% if results %}

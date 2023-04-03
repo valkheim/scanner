@@ -143,6 +143,12 @@ dl {
     height: var(--header-height);
 }
 
+.header-logo {
+    vertical-align: middle;
+    margin-left: 1em;
+    width: 32px;
+}
+
 main {
     display: flex;
     flex-direction: column;

@@ -11,34 +11,26 @@ import typing as T
 from scanner.utils import run_process, yield_files
 
 
-def read_result_infos(result_hash: str) -> T.Optional[T.Dict[str, T.Any]]:
+def get_results_dir(hash: str = None) -> T.Optional[str]:
     results_dir = os.path.normpath(
-        os.path.join(os.path.dirname(__file__), "..", "results")
+        os.path.join(os.path.dirname(__file__), "results")
     )
+
+    if hash is not None:
+        results_dir = os.path.join(results_dir, hash)
+
+    os.makedirs(results_dir, exist_ok=True)
+    return results_dir
+
+
+def read_result_infos(result_hash: str) -> T.Optional[T.Dict[str, T.Any]]:
+    results_dir = get_results_dir()
     infos_path = os.path.join(results_dir, result_hash, "infos.json")
     if not os.path.exists(infos_path):
         return None
 
     with open(infos_path, "rt") as fh:
         return json.load(fh)
-
-
-def get_results_dir(hash: str = None) -> T.Optional[str]:
-    # for all hashes
-    if hash is None:
-        results_dir = os.path.normpath(
-            os.path.join(os.path.dirname(__file__), "..", "results")
-        )
-        os.makedirs(results_dir, exist_ok=True)
-        return results_dir
-
-    # for a specific hash
-    if read_result_infos(hash) is None:
-        return None
-
-    return os.path.normpath(
-        os.path.join(os.path.dirname(__file__), "..", "results", hash)
-    )
 
 
 def yield_valid_extractor_paths(dst_file):
@@ -103,17 +95,17 @@ def get_extractors_data(filedir: str) -> T.Dict[str, T.Any]:
 
 
 def handle_submitted_file(f, filename: str) -> str:
+    # Compute SH1 hash
     hash = hashlib.sha1(f.read()).hexdigest()
     f.seek(0)
-    dst_dir = os.path.normpath(
-        os.path.join(os.path.dirname(__file__), "..", "results", hash)
-    )
-    dst_file = os.path.join(dst_dir, filename)
-    if not os.path.isdir(dst_dir):
-        os.makedirs(dst_dir)
-        with open(dst_file, "wb") as fh:
-            fh.write(f.read())
 
+    # Copy file to results dir
+    dst_dir = get_results_dir(hash)
+    dst_file = os.path.join(dst_dir, filename)
+    with open(dst_file, "wb") as fh:
+        fh.write(f.read())
+
+    # Complete file infos
     with open(os.path.join(dst_dir, "infos.json"), "wt") as fh:
         fh.write(
             json.dumps(

@@ -1,4 +1,3 @@
-import datetime
 import os
 import pathlib
 import subprocess
@@ -92,11 +91,14 @@ def get_results_dir(hash: str = None) -> str:
     return results_dir
 
 
-def archive(hash: str) -> str:
+def archive(hash: str, infos: T.Dict[str, T.Any]) -> str:
     results_dir = get_results_dir()
-    timestamp = datetime.datetime.now().strftime("%Y-%d-%m_%H-%M")
+    timestamp = infos["last_update"].replace(" ", "_").replace(":", "-")
     archive_filename = f"scanner-{hash}-{timestamp}.zip"
     archive_path = os.path.join(results_dir, archive_filename)
+    if os.path.exists(archive_path):
+        return archive_path
+
     directory = pathlib.Path(get_results_dir(hash))
     with zipfile.ZipFile(
         archive_path, "w", compression=zipfile.ZIP_BZIP2, compresslevel=9

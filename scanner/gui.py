@@ -6,6 +6,7 @@ from scanner.analyse import (
     get_last_results,
     get_results,
     handle_submitted_file,
+    read_result_infos,
     run_extractors,
 )
 from scanner.utils import archive
@@ -33,7 +34,8 @@ def analyse(hash):
 
 @gui.route("/x/<hash>")
 def export(hash):
-    archive_path = archive(hash)
+    infos = read_result_infos(hash)
+    archive_path = archive(hash, infos)
     return flask.send_file(archive_path)
 
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
+from operator import itemgetter
 
 from _strings import (
     SUSPICIOUS_AVS,
@@ -44,16 +45,24 @@ if __name__ == "__main__":
     ]
     suspicious_strings_infos = []
     for type, label in types:
-        if (strings := get_blacklisted_strings(sys.argv[1], type)) is None:
+        if (
+            string_infos := get_blacklisted_strings(sys.argv[1], type)
+        ) is None:
             continue
 
-        for string in strings:
-            suspicious_strings_infos.append([string, label])
+        for offset, string in string_infos:
+            suspicious_strings_infos.append([offset, string, label])
 
     if suspicious_strings_infos == []:
         sys.exit(1)
 
-    for string, label in suspicious_strings_infos:
-        print(label, string, sep=",")
+    # Sort by offset
+    suspicious_strings_infos = sorted(
+        suspicious_strings_infos, key=itemgetter(0)
+    )
+
+    print("offset,label,string")
+    for offset, string, label in suspicious_strings_infos:
+        print(f"{offset:#08x}", label, string, sep=",")
 
     sys.exit(0)

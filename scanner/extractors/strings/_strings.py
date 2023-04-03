@@ -5875,45 +5875,53 @@ def _get_file_data(filepath: str) -> bytes:
 
 @functools.lru_cache(maxsize=32)
 def get_strings(
-    filepath: str, ascii: bool = True, unicode: bool = True
+    filepath: str,
+    ascii: bool = True,
+    unicode: bool = True,
+    offsets: bool = False,
 ) -> T.List[str]:
     # Must include stack and tight strings at some point
-    strings = []
+    strings_info = []
     if not ascii and not unicode:
-        return strings
+        return strings_info
 
     min_length = 5
     data = _get_file_data(filepath)
     if ascii:
-        ascii_re = re.compile(rb"([%s]{%d,})" % (ASCII_BYTE, min_length))
-        strings += re.findall(ascii_re, data)
-    if unicode:
-        unicode_re = re.compile(
-            b"((?:[%s]\x00){%d,})" % (ASCII_BYTE, min_length)
-        )
-        strings += re.findall(unicode_re, data)
+        ascii_pattern = rb"([%s]{%d,})" % (ASCII_BYTE, min_length)
+        if offsets:
+            for m in re.compile(ascii_pattern).finditer(data):
+                strings_info.append([m.start(), m.group()])
 
-    return strings
+        else:
+            strings_info += re.findall(ascii_pattern, data)
+
+    if unicode:
+        unicode_pattern = b"((?:[%s]\x00){%d,})" % (ASCII_BYTE, min_length)
+        if offsets:
+            for m in re.compile(unicode_pattern).finditer(data):
+                strings_info.append([m.start(), m.group()])
+
+        else:
+            strings_info += re.findall(unicode_pattern, data)
+
+    return strings_info
 
 
 def get_blacklisted_strings(
     filepath: str, blacklist: T.List[str]
 ) -> T.List[str]:
-    strings = get_strings(filepath, ascii=True, unicode=True)
-    found_in_strings = [
-        s.decode()
-        for s in strings
+    strings = get_strings(filepath, ascii=True, unicode=True, offsets=True)
+    return [
+        (offset, s.decode())
+        for offset, s in strings
         if s.lower().decode() in "".join(blacklist).lower()
     ]
-    found_in_lst = [
-        s for s in blacklist if s.lower() in b"".join(strings).lower().decode()
-    ]
-    return found_in_strings + found_in_lst
 
 
 def get_ipv4(filepath: str) -> int:
     # May capture version strings (e.g. 1.0.0.0)
-    strings = get_strings(filepath, ascii=True, unicode=True)
+    strings = get_strings(filepath, ascii=True, unicode=True, offsets=False)
     # Will match ipv4 with optional :<port> suffix
     prog = re.compile(
         rb"^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}(:((6553[0-5])|(655[0-2][0-9])|(65[0-4][0-9]{2})|(6[0-4][0-9]{3})|([1-5][0-9]{4})|([0-5]{0,5})|([0-9]{1,4})))?$"

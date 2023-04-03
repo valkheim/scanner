@@ -1,7 +1,10 @@
+import datetime
 import os
+import pathlib
 import subprocess
 import time
 import typing as T
+import zipfile
 
 import colorama
 
@@ -75,3 +78,30 @@ def hexdump(data: bytes, offset: int = 0) -> str:
         lines.append(f"{i + offset:#08x}: {hexline}|{asciiline}|")
 
     return "\n".join(lines)
+
+
+def get_results_dir(hash: str = None) -> str:
+    results_dir = os.path.normpath(
+        os.path.join(os.path.dirname(__file__), "results")
+    )
+
+    if hash is not None:
+        results_dir = os.path.join(results_dir, hash)
+
+    os.makedirs(results_dir, exist_ok=True)
+    return results_dir
+
+
+def archive(hash: str) -> str:
+    results_dir = get_results_dir()
+    timestamp = datetime.datetime.now().strftime("%Y-%d-%m_%H-%M")
+    archive_filename = f"scanner-{hash}-{timestamp}.zip"
+    archive_path = os.path.join(results_dir, archive_filename)
+    directory = pathlib.Path(get_results_dir(hash))
+    with zipfile.ZipFile(
+        archive_path, "w", compression=zipfile.ZIP_BZIP2, compresslevel=9
+    ) as archive:
+        for filepath in directory.rglob("*"):
+            archive.write(filepath, filepath.relative_to(directory))
+
+    return archive_path

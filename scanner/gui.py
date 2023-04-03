@@ -8,6 +8,7 @@ from scanner.analyse import (
     handle_submitted_file,
     run_extractors,
 )
+from scanner.utils import archive
 
 gui = flask.Blueprint("gui", __name__, url_prefix="/")
 
@@ -28,6 +29,12 @@ def result(hash):
 def analyse(hash):
     run_extractors(hash)
     return flask.redirect(flask.url_for("gui.result", hash=hash))
+
+
+@gui.route("/x/<hash>")
+def export(hash):
+    archive_path = archive(hash)
+    return flask.send_file(archive_path)
 
 
 @gui.route("/upload", methods=["POST"])

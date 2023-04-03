@@ -8,19 +8,7 @@ import os
 import time
 import typing as T
 
-from scanner.utils import run_process, yield_files
-
-
-def get_results_dir(hash: str = None) -> T.Optional[str]:
-    results_dir = os.path.normpath(
-        os.path.join(os.path.dirname(__file__), "results")
-    )
-
-    if hash is not None:
-        results_dir = os.path.join(results_dir, hash)
-
-    os.makedirs(results_dir, exist_ok=True)
-    return results_dir
+from scanner.utils import get_results_dir, run_process, yield_files
 
 
 def read_result_infos(result_hash: str) -> T.Optional[T.Dict[str, T.Any]]:

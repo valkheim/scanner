@@ -2,8 +2,12 @@ import argparse
 
 import flask
 
-from scanner.analyse import (get_last_results, get_results,
-                             handle_submitted_file, run_extractors)
+from scanner.analyse import (
+    get_last_results,
+    get_results,
+    handle_submitted_file,
+    run_extractors,
+)
 
 gui = flask.Blueprint("gui", __name__, url_prefix="/")
 

@@ -49,7 +49,9 @@ def get_debug_infos(filepath: str) -> T.Optional[T.Tuple[str, str]]:
     try:
         debug_data, debug_type = get_pe_debug_data(filepath)
 
-    except Exception:  # pefile.PEFormatError: # DOS Header magic not found, pdbparse lib error
+    except (
+        Exception
+    ):  # pefile.PEFormatError: # DOS Header magic not found, pdbparse lib error
         return None, None
 
     if debug_type == "IMAGE_DEBUG_TYPE_CODEVIEW":

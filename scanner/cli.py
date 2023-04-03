@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+
 import lief
 
 from scanner.analyse import (

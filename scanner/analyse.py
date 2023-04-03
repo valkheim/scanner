@@ -65,7 +65,7 @@ def run_extractors(hash: str) -> None:
     dst_dir = get_results_dir(hash)
     if (infos := read_result_infos(hash)) is None:
         return
-    
+
     dst_file = os.path.join(dst_dir, infos["filename"])
     for extractor_path, results_dir in yield_valid_extractor_paths(dst_file):
         files.append(open(os.path.join(results_dir, "stdout.log"), "wt"))

@@ -27,6 +27,7 @@ from scanner.extractors.pe.debug import get_debug_infos
 from scanner.features_data import (
     CYGWIN_SECTION_NAMES,
     LINUX_ELF_SECTION_NAMES,
+    SUSPICIOUS_IMPHASHES,
     USUSAL_SECTION_CHARACTERISTICS,
 )
 
@@ -116,6 +117,14 @@ def feature_has_cui_subsystem(filepath: str) -> bool:
 def feature_has_suspicious_number_of_imports(filepath: str) -> bool:
     n = len(get_imports(filepath) or [])
     return n < 10 or 500 < n
+
+
+def feature_has_suspicious_imphash(filepath: str) -> bool:
+    if (pe := load_lief_pe(filepath)) is None:
+        return False
+
+    imphash = lief.PE.get_imphash(pe).lower()
+    return imphash in SUSPICIOUS_IMPHASHES
 
 
 def feature_has_suspicious_entrypoint_non_executable(filepath: str) -> bool:
@@ -414,6 +423,7 @@ if __name__ == "__main__":
         "has_cui_subsystem": feature_has_cui_subsystem,
         "has_suspicious_entropy_shannon": feature_has_suspicious_entropy_shannon,
         "has_suspicious_number_of_imports": feature_has_suspicious_number_of_imports,
+        "has_suspicious_imphash": feature_has_suspicious_imphash,
         "has_suspicious_debug_timestamp": feature_has_suspicious_debug_timestamp,
         # Header entrypoint
         "has_suspicious_entrypoint_non_executable": feature_has_suspicious_entrypoint_non_executable,

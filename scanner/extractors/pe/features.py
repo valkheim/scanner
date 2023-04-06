@@ -7,6 +7,10 @@ import typing as T
 import joblib
 import lief
 from _pe import (  # noqa
+    CYGWIN_SECTION_NAMES,
+    LINUX_ELF_SECTION_NAMES,
+    SUSPICIOUS_IMPHASHES,
+    USUSAL_SECTION_CHARACTERISTICS,
     get_exports,
     get_header_infos,
     get_imports,
@@ -24,12 +28,6 @@ from _pe import (  # noqa
 
 from scanner.extractors.entropy.entropy import get_entropy
 from scanner.extractors.pe.debug import get_debug_infos
-from scanner.features_data import (
-    CYGWIN_SECTION_NAMES,
-    LINUX_ELF_SECTION_NAMES,
-    SUSPICIOUS_IMPHASHES,
-    USUSAL_SECTION_CHARACTERISTICS,
-)
 
 
 def feature_amount_of_exports(filepath: str):

@@ -232,6 +232,7 @@ ANTIDEBUG_IMPORTS = {
         "UnMapDebugInformation",
     },
 }
+
 KEYBOARD_IMPORTS = {
     "kernel32.dll": {
         "keybd_event",
@@ -274,6 +275,7 @@ KEYBOARD_IMPORTS = {
         "VkKeyScan",
     },
 }
+
 SUSPICIOUS_IMPORTS = {
     "samlib.dll": {
         "SamEnumerateDomainsInSamServer",
@@ -3766,6 +3768,21 @@ SUSPICIOUS_MODULES = [
     "Au3Zip.dll",
 ]
 
+# https://www.mandiant.com/resources/blog/tracking-malware-import-hashing
+SUSPICIOUS_IMPHASHES = [
+    "2c26ec4a570a502ed3e8484295581989",  # GREENCAT
+    "b722c33458882a1ab65a13e99efe357e",  # GREENCAT
+    "2d24325daea16e770eb82fa6774d70f1",  # GREENCAT
+    "0d72b49ed68430225595cc1efb43ced9",  # GREENCAT
+    "959711e93a68941639fd8b7fba3ca28f",  # STARSYPOUND
+    "4cec0085b43f40b4743dc218c585f2ec",  # COOKIEBAG
+    "3b10d6b16f135c366fc8e88cba49bc6c",  # NEWSREELS
+    "4f0aca83dfe82b02bbecce448ce8be00",  # NEWSREELS
+    "ee22b62aa3a63b7c17316d219d555891",  # TABMSGSQL
+    "a1a42f57ff30983efda08b68fedd3cfc",  # WEBC2
+    "7276a74b59de5761801b35c672c9ccb4",  # WEBC2
+]
+
 # https://github.com/avast/retdec/blob/071852bbc9619342ce2409ce3241124526a3f0a0/src/fileformat/file_format/pe/pe_format.cpp#L243
 # http://www.hexacorn.com/blog/2016/12/15/pe-section-names-re-visited/
 WHITELIST_SECTION_NAMES = [
@@ -4157,6 +4174,169 @@ WHITELIST_SECTION_NAMES = [
     # m0ar
     ".rossym",
 ]
+
+# https://www.hexacorn.com/blog/2016/12/15/pe-section-names-re-visited/
+CYGWIN_SECTION_NAMES = [
+    ".init",
+    ".text",
+    # ".text$* (basically, .text$<name>)",
+    ".glue_7t",
+    ".glue_7",
+    ".fini",
+    ".gcc_exc",
+    ".gcc_except_table",
+    ".autoload_text",
+    ".data",
+    ".data2",
+    # ".data$* (basically, .data$<name>)",
+    ".data_cygwin_nocopy",
+    ".rdata",
+    # ".rdata$* (basically, .rdata$<name>)",
+    ".eh_frame",
+    ".pdata",
+    ".bss",
+    "COMMON",
+    ".edata",
+    ".debug$S",
+    ".debug$T",
+    ".debug$F",
+    ".drectve",
+    ".idata",
+    ".idata$2",
+    ".idata$3",
+    ".idata$4",
+    ".idata$5",
+    ".idata$6",
+    ".idata$7",
+    ".CRT",
+    ".endjunk",
+    ".cygwin_dll_common",
+    ".rsrc",
+    # ".rsrc$* (basically, .rsrc$<name>)",
+    ".reloc",
+    ".stab",
+    ".stabstr",
+    ".debug_aranges",
+    ".debug_pubnames",
+    ".debug_info",
+    ".debug_abbrev",
+    ".debug_line",
+    ".debug_frame",
+    ".debug_str",
+    ".debug_loc",
+    ".debug_macinfo",
+    ".debug_ranges",
+    ".cygheap",
+]
+
+LINUX_ELF_SECTION_NAMES = [
+    ".btext",  # Big Endian .text section (code)
+    ".bdata",  # Big Endian .data section (data)
+    ".brdata",  # Big Endian .rdata section (Read-Only data)
+    ".bctors",  # Big Endian .ctors section (constructors)
+    ".bdtors",  # Big Endian .dtors section (destructors)
+    ".rela.btext",  # Big Endian relocation section for .text
+    ".rela.bdata",  # Big Endian relocation section for .data
+    ".rela.brdata",  # Big Endian relocation section for .rdata
+    ".rela.bctors",  # Big Endian relocation section for .ctors
+    ".rela.bdtors",  # Big Endian relocation section for .dtors
+    ".bbss",  # Big Endian section .bss (uninitialized data)
+    ".ctors",  # Little Endian .ctors section (constructors)
+    ".dtors",  # Little Endian .dtors section (destructors)
+    ".ltext",  # Little Endian .text section (code)
+    ".ldata",  # Little Endian .data section (data)
+    ".lrdata",  # Little Endian .rdata section (Read-Only data)
+    ".lctors",  # Little Endian .ctors section (constructors)
+    ".ldtors",  # Little Endian .dtors section (destructors)
+    ".rela.ltext",  # Little Endian relocation section for .text
+    ".rela.ldata",  # Little Endian relocation section for .data
+    ".rela.lrdata",  # Little Endian relocation section for .rdata
+    ".rela.lctors",  # Little Endian relocation section for .ctors
+    ".rela.ldtors",  # Little Endian relocation section for .dtors
+    ".lbss",  # Little Endian section .bss (uninitialized data)
+    # Primarily Linux-oriented, but sometimes present in PE e.g. in some old Watcom-compiled binaries
+    "begtext",  # beginning of the text section
+    "begdata",  # beginning of the data section
+    "begbss",  # beginning of the bss section
+    "endtext",  # end of the text section
+    "enddata",  # end of the data section
+    "endbss",  # end of the bss section
+]
+
+# https://github.com/avast/pelib/blob/9ce2427424a4bd5716310ff3eef881dbc2915ff8/include/pelib/PeLibAux.h#L259
+IMAGE_SCN_CNT_CODE = 0x00000020
+IMAGE_SCN_CNT_INITIALIZED_DATA = 0x00000040
+IMAGE_SCN_CNT_UNINITIALIZED_DATA = 0x00000080
+IMAGE_SCN_LNK_INFO = 0x00000200
+IMAGE_SCN_MEM_DISCARDABLE = 0x02000000
+IMAGE_SCN_MEM_EXECUTE = 0x20000000
+IMAGE_SCN_MEM_READ = 0x40000000
+IMAGE_SCN_MEM_WRITE = 0x80000000
+
+# https://github.com/avast/retdec/blob/071852bbc9619342ce2409ce3241124526a3f0a0/src/fileformat/file_format/pe/pe_format.cpp#L430
+USUSAL_SECTION_CHARACTERISTICS = {
+    ".bss": (
+        IMAGE_SCN_CNT_UNINITIALIZED_DATA
+        | IMAGE_SCN_MEM_READ
+        | IMAGE_SCN_MEM_WRITE
+    ),
+    ".cormeta": IMAGE_SCN_LNK_INFO,
+    ".data": (
+        IMAGE_SCN_CNT_INITIALIZED_DATA
+        | IMAGE_SCN_MEM_READ
+        | IMAGE_SCN_MEM_WRITE
+    ),
+    ".debug": (
+        IMAGE_SCN_CNT_INITIALIZED_DATA
+        | IMAGE_SCN_MEM_READ
+        | IMAGE_SCN_MEM_DISCARDABLE
+    ),
+    ".drective": IMAGE_SCN_LNK_INFO,
+    ".edata": (IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_MEM_READ),
+    ".idata": (
+        IMAGE_SCN_CNT_INITIALIZED_DATA
+        | IMAGE_SCN_MEM_READ
+        | IMAGE_SCN_MEM_WRITE
+    ),
+    ".idlsym": IMAGE_SCN_LNK_INFO,
+    ".pdata": (IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_MEM_READ),
+    ".rdata": (IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_MEM_READ),
+    ".reloc": (
+        IMAGE_SCN_CNT_INITIALIZED_DATA
+        | IMAGE_SCN_MEM_READ
+        | IMAGE_SCN_MEM_DISCARDABLE
+    ),
+    ".rsrc": (IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_MEM_READ),
+    ".sbss": (
+        IMAGE_SCN_CNT_UNINITIALIZED_DATA
+        | IMAGE_SCN_MEM_READ
+        | IMAGE_SCN_MEM_WRITE
+    ),
+    ".sdata": (
+        IMAGE_SCN_CNT_INITIALIZED_DATA
+        | IMAGE_SCN_MEM_READ
+        | IMAGE_SCN_MEM_WRITE
+    ),
+    ".srdata": (IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_MEM_READ),
+    ".sxdata": IMAGE_SCN_LNK_INFO,
+    ".text": (IMAGE_SCN_CNT_CODE | IMAGE_SCN_MEM_EXECUTE | IMAGE_SCN_MEM_READ),
+    ".tls": (
+        IMAGE_SCN_CNT_INITIALIZED_DATA
+        | IMAGE_SCN_MEM_READ
+        | IMAGE_SCN_MEM_WRITE
+    ),
+    ".tls$": (
+        IMAGE_SCN_CNT_INITIALIZED_DATA
+        | IMAGE_SCN_MEM_READ
+        | IMAGE_SCN_MEM_WRITE
+    ),
+    ".vsdata": (
+        IMAGE_SCN_CNT_INITIALIZED_DATA
+        | IMAGE_SCN_MEM_READ
+        | IMAGE_SCN_MEM_WRITE
+    ),
+    ".xdata": (IMAGE_SCN_CNT_INITIALIZED_DATA | IMAGE_SCN_MEM_READ),
+}
 
 
 @functools.lru_cache(maxsize=32)

@@ -5,3 +5,4 @@
    [ ] suspicious guid (clsid, known folders, sandbox pids, etc)
 [ ] find sddl
 [ ] find oids
+[ ] rm features_data.py dependencies

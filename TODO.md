@@ -1,3 +1,7 @@
 [ ] find TLDS strings
 [ ] rerun single script from GUI
-[ ] suspicious modules
+[ ] scan bytes
+   [ ] leetspeak
+   [ ] suspicious guid (clsid, known folders, sandbox pids, etc)
+[ ] find sddl
+[ ] find oids

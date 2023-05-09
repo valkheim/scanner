@@ -6,5 +6,4 @@
 [ ] find sddl
 [ ] find oids
 [ ] rm features_data.py dependencies
-[ ] delete analysis
 [ ] cli log in gui during loading scree

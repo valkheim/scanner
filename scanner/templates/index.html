@@ -14,14 +14,14 @@
 <body>
     <div class="header">
         <div class="home-menu pure-menu pure-menu-horizontal pure-menu-fixed">
-        <div>
-            <a class="pure-menu-heading" href="/">
-                <img class="header-logo" src="{{ url_for('static',filename='img/favicon.ico')}}" />
-                <span class="header-label">
-                    File scanner
-                </span>
-            </a>
-        </div>
+            <div>
+                <a class="pure-menu-heading" href="/">
+                    <img class="header-logo" src="{{ url_for('static',filename='img/favicon.ico')}}" />
+                    <span class="header-label">
+                        File scanner
+                    </span>
+                </a>
+            </div>
             <ul class="pure-menu-list">
                 <li class="pure-menu-item"><a href="/#upload" class="pure-menu-link">Upload</a></li>
                 {% if results %}
@@ -74,8 +74,9 @@
             <a id="actions" class="anchor"></a>
             <h2>Actions</h2>
             <div class="actions-area">
-                <button id="action-rerun" class="pure-button open-modal">Rerun analysis</button>
-                <button id="action-save" class="pure-button">Export</button>
+                <button id="action-rerun" class="pure-button open-modal">Rerun</button>
+                <button id="action-delete" class="pure-button open-modal">Delete</button>
+                <button id="action-export" class="pure-button">Export</button>
             </div>
         </div>
         {% endif %}

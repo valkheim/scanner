@@ -6,7 +6,7 @@ import lief
 
 from scanner.analyse import (
     get_last_results,
-    get_results,
+    get_result,
     handle_submitted_file,
     run_extractors,
 )
@@ -22,7 +22,7 @@ def handle_file(filepath: str) -> None:
         hash = handle_submitted_file(fh, filename)
         print(f"{filename} -- {hash}")
         run_extractors(hash)
-        get_results(hash)
+        get_result(hash)
 
     return
 
@@ -34,7 +34,7 @@ def handle_dir(dirpath: str) -> str:
 
 
 def print_results(hash: str):
-    results = get_results(hash)
+    results = get_result(hash)
     print(json.dumps(results))
 
 

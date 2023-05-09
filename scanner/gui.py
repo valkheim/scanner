@@ -3,8 +3,9 @@ import argparse
 import flask
 
 from scanner.analyse import (
+    del_result,
     get_last_results,
-    get_results,
+    get_result,
     handle_submitted_file,
     read_result_infos,
     run_extractors,
@@ -22,7 +23,7 @@ def index():
 
 @gui.route("/r/<hash>", methods=["GET"])
 def result(hash):
-    results = get_results(hash)
+    results = get_result(hash)
     return flask.render_template("index.html", results=results)
 
 
@@ -30,6 +31,12 @@ def result(hash):
 def analyse(hash):
     run_extractors(hash)
     return flask.redirect(flask.url_for("gui.result", hash=hash))
+
+
+@gui.route("/d/<hash>", methods=["GET"])
+def delete(hash):
+    del_result(hash)
+    return flask.redirect(flask.url_for("gui.index"))
 
 
 @gui.route("/x/<hash>")

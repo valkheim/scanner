@@ -1,6 +1,7 @@
 const actionsArea = document.querySelector(".actions-area")
 const rerunButton = actionsArea.querySelector("#action-rerun")
-const saveButton = actionsArea.querySelector("#action-save")
+const deleteButton = actionsArea.querySelector("#action-delete")
+const exportButton = actionsArea.querySelector("#action-export")
 const hash = document.querySelector("#infos-hash").innerText
 
 rerunButton.addEventListener('click', () => {
@@ -9,7 +10,13 @@ rerunButton.addEventListener('click', () => {
     })
 })
 
-saveButton.onclick = () => {
+deleteButton.addEventListener('click', () => {
+    fetch("/d/" + hash).then(res => {
+        window.location.replace(res.url);
+    })
+})
+
+exportButton.onclick = () => {
     fetch("/x/" + hash)
         .then(async res => ({
             name: res.headers.get("content-disposition")?.split("=")[1],

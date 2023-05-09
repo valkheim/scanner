@@ -5,6 +5,7 @@ import json
 import multiprocessing
 import multiprocessing.dummy
 import os
+import shutil
 import time
 import typing as T
 
@@ -110,7 +111,7 @@ def handle_submitted_file(f, filename: str) -> str:
     return hash
 
 
-def get_results(hash: str) -> T.Dict[str, T.Any]:
+def get_result(hash: str) -> T.Dict[str, T.Any]:
     results_dir = get_results_dir()
     dst_dir = os.path.join(results_dir, hash)
     extractors_data = get_extractors_data(dst_dir)
@@ -119,6 +120,13 @@ def get_results(hash: str) -> T.Dict[str, T.Any]:
         "infos": read_result_infos(hash),
         "extractors": sorted_extractors_data,
     }
+
+
+def del_result(hash: str) -> T.Dict[str, T.Any]:
+    results_dir = get_results_dir()
+    dst_dir = os.path.join(results_dir, hash)
+    shutil.rmtree(dst_dir, ignore_errors=True)
+    print(f"{dst_dir} deleted")
 
 
 def get_last_results() -> T.List[T.Any]:

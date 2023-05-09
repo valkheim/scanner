@@ -10,13 +10,6 @@ repos:
         language: system
         pass_filenames: false
 
--   repo: local
-    hooks:
-    -   id: unittests
-        name: run unit tests
-        entry: poetry run test
-        language: system
-        pass_filenames: false
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
     hooks:

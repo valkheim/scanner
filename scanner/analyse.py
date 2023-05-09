@@ -69,7 +69,6 @@ def run_extractors(hash: str) -> None:
 
     elapsed = round(time.perf_counter() - start, 2)
     infos["elapsed"] = elapsed
-    print(infos)
     write_result_infos(hash, infos)
     print(f"Extractors ran in {elapsed} second(s) for {hash}")
 

@@ -18,6 +18,11 @@ body {
     font-size: 1.1rem;
 }
 
+::selection {
+    background-color: var(--green);
+    color: var(--black);
+}
+
 h1 {
     font-size: 1.7rem;
 }
@@ -60,8 +65,9 @@ textarea {
     color: var(--white);
 }
 
-dl {
-    margin: 0;
+textarea:focus {
+    outline: none !important;
+    border-color: var(--yellow);
 }
 
 /* hack for fixed header offset on anchor links */
@@ -86,18 +92,42 @@ dl {
     margin-bottom: 1em;
 }
 
-.home-menu {
+.pure-button {
+    background-color: #FFBF00;
+}
+
+/*
+ *
+ * HEADER
+ *
+*/
+
+header {
+    height: var(--header-height);
+}
+
+.header-logo {
+    vertical-align: middle;
+    margin: 0 .4em;
+    width: 26px;
+}
+
+.header-label {
+    vertical-align: middle;
+}
+
+header .home-menu {
     height: 6vh;
     padding: 0.5em;
     text-align: center;
     box-shadow: 0 1px 1px rgba(0, 0, 0, 0.10);
 }
 
-.home-menu {
+header .home-menu {
     background: var(--green);
 }
 
-.pure-menu.pure-menu-fixed {
+header .pure-menu.pure-menu-fixed {
     /* Fixed menus normally have a border at the bottom. */
     border-bottom: none;
     /* I need a higher z-index here because of the scroll-over effect. */
@@ -109,49 +139,41 @@ dl {
     justify-content: space-between;
 }
 
-.home-menu .pure-menu-heading {
+header .home-menu .pure-menu-heading {
     font-weight: bold;
     font-size: 120%;
 }
 
-.pure-menu-heading,
+header .pure-menu-heading,
 .pure-menu-link {
     color: var(--black);
 }
 
-.home-menu li a:hover {
+header .home-menu li a:hover {
     color: var(--white);
 }
 
-.home-menu li a:hover,
+header .home-menu li a:hover,
 .home-menu li a:focus {
     background: none;
     border: none;
 }
 
 @media (min-width: 48em) {
-    .home-menu {
+    header .home-menu {
         text-align: left;
     }
 
-    .home-menu ul {
+    header .home-menu ul {
         float: right;
     }
 }
 
-.header {
-    height: var(--header-height);
-}
-
-.header-logo {
-    vertical-align: middle;
-    margin: 0 .4em;
-    width: 32px;
-}
-
-.header-label {
-    vertical-align: middle;
-}
+/*
+ *
+ * MAIN
+ *
+*/
 
 main {
     display: flex;
@@ -172,6 +194,12 @@ main>div {
         padding: 2vh 10vw;
     }
 }
+
+/*
+ *
+ * MAIN > UPLOAD
+ *
+*/
 
 .upload,
 .results {
@@ -236,7 +264,35 @@ main>div {
     width: 100%;
 }
 
-.footer {
+/*
+ *
+ * MAIN > EXTRACTORS
+ *
+*/
+
+.extractors .pure-menu-horizontal {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.extractors .pure-menu-heading {
+    color: var(--white);
+    padding: 0;
+}
+
+.extractors button {
+    padding: 2px 10px;
+}
+
+/*
+ *
+ * FOOTER
+ *
+*/
+
+
+footer {
     height: 6vh;
     background: var(--black);
     position: fixed;
@@ -246,6 +302,14 @@ main>div {
     text-align: center;
     color: var(--green);
 }
+
+
+/*
+ *
+ * MODAL
+ *
+*/
+
 
 .modal {
     visibility: hidden;

@@ -1,6 +1,6 @@
 const rand = (arr) => arr[Math.floor(Math.random() * arr.length)]
 
-window.onload = () => {
+window.addEventListener("load", () => {
     const footerArea = document.querySelector(".footer")
     footerArea.innerText = rand([
         "Present day. present time!",
@@ -28,4 +28,4 @@ window.onload = () => {
         String.raw`(╯°□°）╯︵ ┻━┻`,
         String.raw`(ヘ･_･)ヘ┳━┳`
     ])
-}
+})

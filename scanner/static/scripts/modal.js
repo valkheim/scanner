@@ -7,8 +7,8 @@ document.querySelectorAll(".open-modal").forEach((e) => {
     e.addEventListener('click', () => openModal())
 })
 
-window.onload = () => {
+window.addEventListener("load", () => {
     const modalImg = document.querySelector(".modal .modal__inner img")
     const id = Math.floor(Math.random() * 7)
     modalImg.src = `/static/img/sleepy/${id}.gif`
-}
+})

@@ -22,6 +22,12 @@ def read_result_infos(result_hash: str) -> T.Optional[T.Dict[str, T.Any]]:
         return json.load(fh)
 
 
+def write_result_infos(result_hash: str, data: T.Dict[str, T.Any]) -> None:
+    dst_dir = get_results_dir(result_hash)
+    with open(os.path.join(dst_dir, "infos.json"), "wt") as fh:
+        fh.write(json.dumps(data))
+
+
 def yield_valid_extractor_paths(dst_file):
     extractors_dir = os.path.join(os.path.dirname(__file__), "extractors")
     for extractor_relpath in yield_files(extractors_dir):
@@ -61,8 +67,11 @@ def run_extractors(hash: str) -> None:
     for f in files:
         f.close()
 
-    end = time.perf_counter()
-    print(f"Extractors ran in {round(end-start, 2)} second(s) for {hash}")
+    elapsed = round(time.perf_counter() - start, 2)
+    infos["elapsed"] = elapsed
+    print(infos)
+    write_result_infos(hash, infos)
+    print(f"Extractors ran in {elapsed} second(s) for {hash}")
 
 
 def get_extractors_data(filedir: str) -> T.Dict[str, T.Any]:
@@ -95,18 +104,16 @@ def handle_submitted_file(f, filename: str) -> str:
         fh.write(f.read())
 
     # Complete file infos
-    with open(os.path.join(dst_dir, "infos.json"), "wt") as fh:
-        fh.write(
-            json.dumps(
-                {
-                    "filename": filename,
-                    "sha1": hash,
-                    "last_update": datetime.datetime.now().strftime(
-                        "%Y-%m-%d %H:%M:%S"
-                    ),
-                }
-            )
-        )
+    write_result_infos(
+        hash,
+        {
+            "filename": filename,
+            "sha1": hash,
+            "last_update": datetime.datetime.now().strftime(
+                "%Y-%m-%d %H:%M:%S"
+            ),
+        },
+    )
 
     return hash
 

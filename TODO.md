@@ -7,3 +7,6 @@
 [ ] find oids
 [ ] rm features_data.py dependencies
 [ ] cli log in gui during loading screen
+[ ] config
+   [ ] extractor whitelist / blacklist?
+   [ ] results folder location

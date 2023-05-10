@@ -1,8 +1,16 @@
 const actionsArea = document.querySelector(".actions-area")
+const copyExtractorButtons = document.querySelector(".extractors").querySelectorAll(".action-copy")
 const rerunButton = actionsArea.querySelector("#action-rerun")
 const deleteButton = actionsArea.querySelector("#action-delete")
 const exportButton = actionsArea.querySelector("#action-export")
 const hash = document.querySelector("#infos-hash").innerText
+
+copyExtractorButtons.forEach(copyExtractorButton => {
+    copyExtractorButton.addEventListener("click", (e) => {
+        const nextTextareaContents = e.target.parentElement.parentElement.parentElement.parentElement.nextElementSibling.innerHTML
+        navigator.clipboard.writeText(nextTextareaContents)
+    })
+})
 
 rerunButton.addEventListener('click', () => {
     fetch("/a/" + hash).then(res => {

@@ -6,4 +6,4 @@
 [ ] find sddl
 [ ] find oids
 [ ] rm features_data.py dependencies
-[ ] cli log in gui during loading scree
+[ ] cli log in gui during loading screen

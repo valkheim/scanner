@@ -24,7 +24,7 @@ def index():
 @gui.route("/r/<hash>", methods=["GET"])
 def result(hash):
     results = get_result(hash)
-    return flask.render_template("index.html", results=results)
+    return flask.render_template("analysis.html", results=results)
 
 
 @gui.route("/a/<hash>")

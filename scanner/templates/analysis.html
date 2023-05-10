@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block main %}
+<main>
+    <div id="results" class="results">
+        <h1>Analysis results</h1>
+        <a id="infos" class="anchor"></a>
+        <h2>Infos</h2>
+        <ul>
+            <li>Filename: {{ results.infos.filename }}</li>
+            <li>Last update: {{ results.infos.last_update }}</li>
+            <li>Hash: <span id="infos-hash">{{ results.infos.sha1 }}</span></li>
+            <li>Analysis duration: {{ results.infos.elapsed}} seconds</li>
+        </ul>
+
+        <a id="extractors" class="anchor"></a>
+        <h2>Extractors</h2>
+        <div class="extractors">
+            {% set outline = "line" %}
+            {% for key, value in results.extractors.items() recursive %}
+            <div class="pure-menu-horizontal">
+                <h3 class="pure-menu-heading">{{ key }}</h3>
+                <ul>
+                    <li class="pure-menu-item"><button class="pure-button" title="copy"><i
+                                class="fa fa-repeat"></i></button></li>
+                    <li class="pure-menu-item"><button class="pure-button" title="repeat"><i
+                                class="fa fa-copy"></i></button></li>
+                </ul>
+            </div>
+            {% if value is string %}
+            <textarea readonly="readonly">{{ value }}</textarea>
+            <!-- todo: replace textarea by some resizable split view with bottom border handle -->
+            {% elif value is mapping %}
+            {{ loop(value.items()) }}
+            {%endif%}
+            {% endfor %}
+        </div>
+
+        <a id="actions" class="anchor"></a>
+        <h2>Actions</h2>
+        <div class="actions-area">
+            <button id="action-rerun" class="pure-button open-modal" title="repeat"><i
+                    class="fa fa-repeat"></i></button>
+            <button id="action-delete" class="pure-button open-modal" title="delete"><i
+                    class="fa fa-trash"></i></button>
+            <button id="action-export" class="pure-button" title="export"><i class="fa fa-download"></i></button>
+        </div>
+    </div>
+
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static',filename='scripts/actions.js') }}"> </script>
+{% endblock %}

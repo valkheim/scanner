@@ -1,148 +1,47 @@
-<!doctype html>
+{% extends 'base.html' %}
 
-<head>
-    {% if results %}
-    <title>Scanner ({{ results.infos.filename }})</title>
-    {% else %}
-    <title>Scanner</title>
-    {% endif %}
-    <link rel="stylesheet" href="{{ url_for('static',filename='styles/pure-min.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static',filename='styles/styles.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static',filename='styles/font-awesome-4.7.0/css/font-awesome.min.css') }}">
-    <link rel="shortcut icon" href="{{ url_for('static',filename='img/favicon.ico')}}">
-</head>
-
-<body>
-    <header>
-        <div class="home-menu pure-menu pure-menu-horizontal pure-menu-fixed">
-            <div>
-                <a class="pure-menu-heading" href="/">
-                    <img class="header-logo" src="{{ url_for('static',filename='img/favicon.ico')}}" />
-                    <span class="header-label">
-                        File scanner
-                    </span>
-                </a>
-            </div>
-            <ul class="pure-menu-list">
-                <li class="pure-menu-item"><a href="/#upload" class="pure-menu-link">Upload</a></li>
-                {% if results %}
-                <li class="pure-menu-item"><a href="#infos" class="pure-menu-link">Infos</a></li>
-                <li class="pure-menu-item"><a href="#extractors" class="pure-menu-link">Extractors</a></li>
-                <li class="pure-menu-item"><a href="#actions" class="pure-menu-link">Actions</a></li>
-                {% endif %}
-                {% if last_results %}
-                <li class="pure-menu-item"><a href="#last_results" class="pure-menu-link">Last results</a></li>
-                {% endif %}
-            </ul>
-        </div>
-    </header>
-
-    <main>
-        {% if not results %}
-        <a id="upload" class="anchor"></a>
-        <div class="upload">
-            <div class="drag-area">
-                <div class="icon"><i class="fas fa-cloud-upload-alt"></i></div>
-                <header>Drag & Drop to upload file</header>
-                <span>OR</span>
-                <button>Browse file</button>
-                <input type="file" hidden>
-            </div>
-        </div>
-        {% else %}
-        <div id="results" class="results">
-            <h1>Analysis results</h1>
-            <a id="infos" class="anchor"></a>
-            <h2>Infos</h2>
-            <ul>
-                <li>Filename: {{ results.infos.filename }}</li>
-                <li>Last update: {{ results.infos.last_update }}</li>
-                <li>Hash: <span id="infos-hash">{{ results.infos.sha1 }}</span></li>
-                <li>Analysis duration: {{ results.infos.elapsed}} seconds</li>
-            </ul>
-
-            <a id="extractors" class="anchor"></a>
-            <h2>Extractors</h2>
-            <div class="extractors">
-                {% set outline = "line" %}
-                {% for key, value in results.extractors.items() recursive %}
-                <div class="pure-menu-horizontal">
-                    <h3 class="pure-menu-heading">{{ key }}</h3>
-                    <ul>
-                        <li class="pure-menu-item"><button class="pure-button" title="copy"><i
-                                    class="fa fa-repeat"></i></button></li>
-                        <li class="pure-menu-item"><button class="pure-button" title="repeat"><i
-                                    class="fa fa-copy"></i></button></li>
-                    </ul>
-                </div>
-                {% if value is string %}
-                <textarea readonly="readonly">{{ value }}</textarea>
-                <!-- todo: replace textarea by some resizable split view with bottom border handle -->
-                {% elif value is mapping %}
-                {{ loop(value.items()) }}
-                {%endif%}
-                {% endfor %}
-            </div>
-
-            <a id="actions" class="anchor"></a>
-            <h2>Actions</h2>
-            <div class="actions-area">
-                <button id="action-rerun" class="pure-button open-modal" title="repeat"><i
-                        class="fa fa-repeat"></i></button>
-                <button id="action-delete" class="pure-button open-modal" title="delete"><i
-                        class="fa fa-trash"></i></button>
-                <button id="action-export" class="pure-button" title="export"><i class="fa fa-download"></i></button>
-            </div>
-        </div>
-        {% endif %}
-
-        {% if last_results %}
-        <div class="last_results">
-            <a id="last_results" class="anchor"></a>
-            <h1>Last results</h1>
-            <table class="pure-table">
-                <thead>
-                    <tr>
-                        <th>Last update</th>
-                        <th>SHA1</th>
-                        <th>Filename</th>
-                        <th>Analyse</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for result in last_results %}
-                    <tr>
-                        <th>{{ result.last_update }}</th>
-                        <th>{{ result.sha1 }}</th>
-                        <th>{{ result.filename }}</th>
-                        <th><a href="/r/{{ result.sha1 }}">GO</a></th>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            </ul>
-        </div>
-        {% endif %}
-
-    </main>
-
-    <footer></footer>
-
-    {% if not results %}
-    <script src="{{ url_for('static',filename='scripts/dragndrop.js') }}"> </script>
-    {% else %}
-    <script src="{{ url_for('static',filename='scripts/actions.js') }}"> </script>
-    {% endif %}
-    <script src="{{ url_for('static',filename='scripts/modal.js') }}"> </script>
-    <script src="{{ url_for('static',filename='scripts/random.js') }}"> </script>
-
-    <div class="modal">
-        <div class="modal__inner">
-            <h2>Loading</h2>
-            <img src="" alt="" />
+{% block main %}
+<main>
+    <a id="upload" class="anchor"></a>
+    <div class="upload">
+        <div class="drag-area">
+            <div class="icon"><i class="fas fa-cloud-upload-alt"></i></div>
+            <header>Drag & Drop to upload file</header>
+            <span>OR</span>
+            <button>Browse file</button>
+            <input type="file" hidden>
         </div>
     </div>
 
-</body>
+    <div class="last_results">
+        <a id="last_results" class="anchor"></a>
+        <h1>Last results</h1>
+        <table class="pure-table">
+            <thead>
+                <tr>
+                    <th>Last update</th>
+                    <th>SHA1</th>
+                    <th>Filename</th>
+                    <th>Analyse</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for result in last_results %}
+                <tr>
+                    <th>{{ result.last_update }}</th>
+                    <th>{{ result.sha1 }}</th>
+                    <th>{{ result.filename }}</th>
+                    <th><a href="/r/{{ result.sha1 }}">GO</a></th>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </ul>
+    </div>
 
-</html>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static',filename='scripts/dragndrop.js') }}"> </script>
+{% endblock %}

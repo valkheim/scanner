@@ -1,0 +1,60 @@
+<!doctype html>
+
+<head>
+    {% if results %}
+    <title>Scanner ({{ results.infos.filename }})</title>
+    {% else %}
+    <title>Scanner</title>
+    {% endif %}
+    <link rel="stylesheet" href="{{ url_for('static',filename='styles/pure-min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static',filename='styles/styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static',filename='styles/font-awesome-4.7.0/css/font-awesome.min.css') }}">
+    <link rel="shortcut icon" href="{{ url_for('static',filename='img/favicon.ico')}}">
+</head>
+
+<body>
+    <header>
+        <div class="home-menu pure-menu pure-menu-horizontal pure-menu-fixed">
+            <div>
+                <a class="pure-menu-heading" href="/">
+                    <img class="header-logo" src="{{ url_for('static',filename='img/favicon.ico')}}" />
+                    <span class="header-label">
+                        File scanner
+                    </span>
+                </a>
+            </div>
+            <ul class="pure-menu-list">
+                <li class="pure-menu-item"><a href="/#upload" class="pure-menu-link">Upload</a></li>
+                {% if results %}
+                <li class="pure-menu-item"><a href="#infos" class="pure-menu-link">Infos</a></li>
+                <li class="pure-menu-item"><a href="#extractors" class="pure-menu-link">Extractors</a></li>
+                <li class="pure-menu-item"><a href="#actions" class="pure-menu-link">Actions</a></li>
+                {% endif %}
+                {% if last_results %}
+                <li class="pure-menu-item"><a href="#last_results" class="pure-menu-link">Last results</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </header>
+
+    {% block main %}
+    {% endblock %}
+
+    <footer></footer>
+
+    {% block scripts %}
+    {% endblock %}
+
+    <script src="{{ url_for('static',filename='scripts/modal.js') }}"> </script>
+    <script src="{{ url_for('static',filename='scripts/random.js') }}"> </script>
+
+    <div class="modal">
+        <div class="modal__inner">
+            <h2>Loading</h2>
+            <img src="" alt="" />
+        </div>
+    </div>
+
+</body>
+
+</html>

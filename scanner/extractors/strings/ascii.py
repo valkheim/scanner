@@ -2,7 +2,7 @@
 
 import sys
 
-from _strings import get_strings
+from _strings import get_description, get_strings
 
 if __name__ == "__main__":
     """/usr/bin/strings -es $1"""
@@ -13,8 +13,9 @@ if __name__ == "__main__":
     ) == []:
         sys.exit(1)
 
-    print("offset,string")
-    for offset, string in strings_infos:
-        print(f"{offset:#08x}", string.decode("ascii"), sep=",")
+    print("offset,string,description")
+    for offset, content in strings_infos:
+        string = content.decode("ascii")
+        print(f"{offset:#08x}", string, get_description(string), sep=",")
 
     sys.exit(0)

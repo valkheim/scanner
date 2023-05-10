@@ -5865,6 +5865,10 @@ SUSPICIOUS_SDDL = [
     "O:BAG:BAD:(A;;0x7;;;PS)(A;;0x3;;;SY)(A;;0x7;;;BA)",
     "WD:(A;;GA;;;WD)",
 ]
+STRING_DESCRIPTIONS = {  # Do'nt use commas, it can break csv outputs
+    r"!This program cannot be run in DOS mode.": "string in dos stub",
+    r"CMD.EXE": "can be used to start cmd.exe",
+}
 
 
 @functools.lru_cache(maxsize=32)
@@ -5906,6 +5910,10 @@ def get_strings(
             strings_info += re.findall(unicode_pattern, data)
 
     return strings_info
+
+
+def get_description(string: str) -> str:
+    return STRING_DESCRIPTIONS.get(string, "")
 
 
 def get_blacklisted_strings(

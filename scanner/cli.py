@@ -12,7 +12,7 @@ from scanner.analyse import (
 )
 
 
-def handle_file(filepath: str) -> None:
+def handle_file(filepath: str) -> int:
     if not os.path.isfile(filepath) or not lief.PE.is_pe(filepath):
         return
 
@@ -24,21 +24,24 @@ def handle_file(filepath: str) -> None:
         run_extractors(hash)
         get_result(hash)
 
-    return
+    return 0
 
 
-def handle_dir(dirpath: str) -> str:
+def handle_dir(dirpath: str) -> int:
     for filename in os.listdir(dirpath):
         filepath = os.path.join(dirpath, filename)
         handle_file(filepath)
 
+    return 0
 
-def print_results(hash: str):
+
+def print_results(hash: str) -> int:
     results = get_result(hash)
     print(json.dumps(results))
+    return 0
 
 
-def print_last_results():
+def print_last_results() -> int:
     for res in get_last_results():
         print(res["last_update"], res["sha1"], res["filename"], sep=" | ")
 

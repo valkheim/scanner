@@ -28,7 +28,7 @@ def write_result_infos(result_hash: str, data: T.Dict[str, T.Any]) -> None:
         fh.write(json.dumps(data))
 
 
-def yield_extractor_paths(dst_file, mkdir=True):
+def yield_extractor_paths(dst_file: str, mkdir=True):
     extractors_dir = os.path.join(os.path.dirname(__file__), "extractors")
     for extractor_relpath in yield_files(extractors_dir):
         extractor_abspath = os.path.join(extractors_dir, extractor_relpath)

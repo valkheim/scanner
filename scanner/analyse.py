@@ -28,7 +28,7 @@ def write_result_infos(result_hash: str, data: T.Dict[str, T.Any]) -> None:
         fh.write(json.dumps(data))
 
 
-def yield_valid_extractor_paths(dst_file):
+def yield_extractor_paths(dst_file, mkdir=True):
     extractors_dir = os.path.join(os.path.dirname(__file__), "extractors")
     for extractor_relpath in yield_files(extractors_dir):
         extractor_abspath = os.path.join(extractors_dir, extractor_relpath)
@@ -41,7 +41,9 @@ def yield_valid_extractor_paths(dst_file):
             *parts[:-1],
             ".".join(parts[-1].split(".")[:-1]),
         )
-        os.makedirs(results_absdir, exist_ok=True)
+        if mkdir:
+            os.makedirs(results_absdir, exist_ok=True)
+
         yield extractor_abspath, results_absdir
 
 
@@ -54,7 +56,7 @@ def run_extractors(hash: str) -> None:
         return
 
     dst_file = os.path.join(dst_dir, infos["filename"])
-    for extractor_path, results_dir in yield_valid_extractor_paths(dst_file):
+    for extractor_path, results_dir in yield_extractor_paths(dst_file):
         files.append(open(os.path.join(results_dir, "stdout.log"), "wt"))
         files.append(open(os.path.join(results_dir, "stderr.log"), "wt"))
         args.append([[extractor_path, dst_file], files[-2], files[-1]])
@@ -73,13 +75,13 @@ def run_extractors(hash: str) -> None:
     print(f"Extractors ran in {elapsed} second(s) for {hash}")
 
 
-def get_extractors_data(filedir: str) -> T.Dict[str, T.Any]:
+def get_extractors_data(result_dir: str) -> T.Dict[str, T.Any]:
     files = [
         y
-        for x in os.walk(filedir)
+        for x in os.walk(result_dir)
         for y in glob.glob(os.path.join(x[0], "*.log"))
     ]
-    ldirs = len(os.path.normpath(filedir).split(os.sep))
+    ldirs = len(os.path.normpath(result_dir).split(os.sep))
     results = {}
     for file in files:
         subpath = os.sep.join(file.split(os.sep)[ldirs:])
@@ -92,7 +94,7 @@ def get_extractors_data(filedir: str) -> T.Dict[str, T.Any]:
 
 
 def handle_submitted_file(f, filename: str) -> str:
-    # Compute SH1 hash
+    # Compute SHA1 hash
     hash = hashlib.sha1(f.read()).hexdigest()
     f.seek(0)
 

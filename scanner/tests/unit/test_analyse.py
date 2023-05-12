@@ -7,7 +7,7 @@ from . import utils
 
 
 class TestAnalyse(unittest.TestCase):
-    def test_yield_extractor_paths(self):
+    def test_yield_extractor_paths(self) -> None:
         extractor_paths = list(
             analyse.yield_extractor_paths(
                 utils.get_some_golden_result(), mkdir=False
@@ -50,7 +50,7 @@ class TestAnalyse(unittest.TestCase):
         ]
         self.assertListEqual(got, expected)
 
-    def test_get_extractors_data(self):
+    def test_get_extractors_data(self) -> None:
         some_golden_dir = utils.get_some_golden_result(
             "f2cd2b349341094854c5806f617a746dd50a74eb"
         )

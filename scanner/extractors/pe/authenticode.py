@@ -3,12 +3,11 @@
 # https://github.com/lief-project/LIEF/blob/master/examples/python/authenticode/authenticode_reader.py
 
 import sys
-import typing as T
 
 import lief
 
 
-def print_attr(indent: int, auth: lief.PE.Attribute):
+def print_attr(indent: int, auth: lief.PE.Attribute) -> None:
     if auth.type == lief.PE.SIG_ATTRIBUTE_TYPES.CONTENT_TYPE:
         print_content_type(indent, auth)
     elif auth.type == lief.PE.SIG_ATTRIBUTE_TYPES.PKCS9_SIGNING_TIME:
@@ -33,16 +32,18 @@ def print_attr(indent: int, auth: lief.PE.Attribute):
 
 def print_pkcs9_at_seq_number(
     indent: int, auth: lief.PE.PKCS9AtSequenceNumber
-):
+) -> None:
     print("{} PKCS #9 sequence number: {}".format(" " * indent, auth.number))
 
 
-def print_ms_nested_sig(indent: int, auth: lief.PE.MsSpcNestedSignature):
+def print_ms_nested_sig(
+    indent: int, auth: lief.PE.MsSpcNestedSignature
+) -> None:
     print("{} MS Nested Signature:".format(" " * indent))
     print_all(auth.signature, indent + 2)
 
 
-def print_spc_sp_opus_info(indent: int, auth: lief.PE.SpcSpOpusInfo):
+def print_spc_sp_opus_info(indent: int, auth: lief.PE.SpcSpOpusInfo) -> None:
     if len(auth.program_name) > 0 and len(auth.more_info) > 0:
         print(
             "{} Info: {} {}".format(
@@ -57,7 +58,7 @@ def print_spc_sp_opus_info(indent: int, auth: lief.PE.SpcSpOpusInfo):
         print("{} Info: <empty>".format(" " * indent))
 
 
-def print_generic_type(indent: int, auth: lief.PE.GenericType):
+def print_generic_type(indent: int, auth: lief.PE.GenericType) -> None:
     print(
         "{} Generic Type {} ({})".format(
             " " * indent, auth.oid, lief.PE.oid_to_string(auth.oid)
@@ -65,7 +66,7 @@ def print_generic_type(indent: int, auth: lief.PE.GenericType):
     )
 
 
-def print_content_type(indent: int, auth: lief.PE.ContentType):
+def print_content_type(indent: int, auth: lief.PE.ContentType) -> None:
     print(
         "{} Content Type OID: {} ({})".format(
             " " * indent, auth.oid, lief.PE.oid_to_string(auth.oid)
@@ -73,7 +74,7 @@ def print_content_type(indent: int, auth: lief.PE.ContentType):
     )
 
 
-def print_signing_time(indent: int, auth: lief.PE.PKCS9SigningTime):
+def print_signing_time(indent: int, auth: lief.PE.PKCS9SigningTime) -> None:
     print(
         "{} Signing Time: {}/{:02}/{:02} - {:02}:{:02}:{:02}".format(
             " " * indent, *auth.time
@@ -81,7 +82,9 @@ def print_signing_time(indent: int, auth: lief.PE.PKCS9SigningTime):
     )
 
 
-def print_ms_statement_type(indent: int, auth: lief.PE.MsSpcStatementType):
+def print_ms_statement_type(
+    indent: int, auth: lief.PE.MsSpcStatementType
+) -> None:
     print(
         "{} MS Statement type OID: {} ({})".format(
             " " * indent, auth.oid, lief.PE.oid_to_string(auth.oid)
@@ -89,13 +92,13 @@ def print_ms_statement_type(indent: int, auth: lief.PE.MsSpcStatementType):
     )
 
 
-def print_pkcs_msg_dg(indent: int, auth: lief.PE.PKCS9MessageDigest):
+def print_pkcs_msg_dg(indent: int, auth: lief.PE.PKCS9MessageDigest) -> None:
     print(
         "{} PKCS9 Message Digest: {}".format(" " * indent, auth.digest.hex())
     )
 
 
-def print_crt(indent: int, crt: lief.PE.x509):
+def print_crt(indent: int, crt: lief.PE.x509) -> None:
     print("{}  Version            : {:d}".format(" " * indent, crt.version))
     print("{}  Issuer             : {}".format(" " * indent, crt.issuer))
     print("{}  Subject            : {}".format(" " * indent, crt.subject))
@@ -150,7 +153,9 @@ def print_crt(indent: int, crt: lief.PE.x509):
     )
 
 
-def print_pkcs_counter_sig(indent: int, auth: lief.PE.PKCS9CounterSignature):
+def print_pkcs_counter_sig(
+    indent: int, auth: lief.PE.PKCS9CounterSignature
+) -> None:
     print("{} PKCS9 counter signature".format(" " * indent))
     signer = auth.signer
     print(
@@ -189,7 +194,7 @@ def print_pkcs_counter_sig(indent: int, auth: lief.PE.PKCS9CounterSignature):
             print_attr(indent + 4, auth)
 
 
-def print_all(sig: lief.PE.Signature, indent: int = 2):
+def print_all(sig: lief.PE.Signature, indent: int = 2) -> None:
     ci: lief.PE.ContentInfo = sig.content_info
     print("Authentihash: {}".format(sig.content_info.digest.hex()))
     print("{}Signature version : {}".format(" " * indent, sig.version))
@@ -253,7 +258,7 @@ def print_all(sig: lief.PE.Signature, indent: int = 2):
                 print_attr(indent + 4, auth)
 
 
-def get_lief_binary(filepath: str) -> T.Optional[lief.PE.Binary]:
+def get_lief_binary(filepath: str) -> lief.PE.Binary | None:
     try:
         return lief.PE.parse(filepath)
 
@@ -262,10 +267,10 @@ def get_lief_binary(filepath: str) -> T.Optional[lief.PE.Binary]:
         return None
 
 
-def has_authenticode(binary: lief.PE.Binary):
+def has_authenticode(binary: lief.PE.Binary) -> bool:
     # flags = lief.PE.Signature.VERIFICATION_CHECKS.DEFAULT
     flags = lief.PE.Signature.VERIFICATION_CHECKS.SKIP_CERT_TIME
-    return (
+    return bool(
         binary.verify_signature(flags)
         != lief.PE.Signature.VERIFICATION_FLAGS.NO_SIGNATURE
     )

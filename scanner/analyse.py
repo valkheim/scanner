@@ -9,10 +9,11 @@ import shutil
 import time
 import typing as T
 
+from scanner.types import Infos, Result
 from scanner.utils import get_results_dir, run_process, yield_files
 
 
-def read_result_infos(result_hash: str) -> T.Optional[T.Dict[str, T.Any]]:
+def read_result_infos(result_hash: str) -> Infos | None:
     results_dir = get_results_dir()
     infos_path = os.path.join(results_dir, result_hash, "infos.json")
     if not os.path.exists(infos_path):
@@ -22,13 +23,15 @@ def read_result_infos(result_hash: str) -> T.Optional[T.Dict[str, T.Any]]:
         return json.load(fh)
 
 
-def write_result_infos(result_hash: str, data: T.Dict[str, T.Any]) -> None:
+def write_result_infos(result_hash: str, data: Infos) -> None:
     dst_dir = get_results_dir(result_hash)
     with open(os.path.join(dst_dir, "infos.json"), "wt") as fh:
         fh.write(json.dumps(data))
 
 
-def yield_extractor_paths(dst_file: str, mkdir=True):
+def yield_extractor_paths(
+    dst_file: str, mkdir: bool = True
+) -> T.Generator[tuple[str, str], None, None]:
     extractors_dir = os.path.join(os.path.dirname(__file__), "extractors")
     for extractor_relpath in yield_files(extractors_dir):
         extractor_abspath = os.path.join(extractors_dir, extractor_relpath)
@@ -93,7 +96,7 @@ def get_extractors_data(result_dir: str) -> T.Dict[str, T.Any]:
     return results
 
 
-def handle_submitted_file(f, filename: str) -> str:
+def handle_submitted_file(f: T.BinaryIO, filename: str) -> str:
     # Compute SHA1 hash
     hash = hashlib.sha1(f.read()).hexdigest()
     f.seek(0)
@@ -119,7 +122,7 @@ def handle_submitted_file(f, filename: str) -> str:
     return hash
 
 
-def get_result(hash: str) -> T.Dict[str, T.Any]:
+def get_result(hash: str) -> Result:
     results_dir = get_results_dir()
     dst_dir = os.path.join(results_dir, hash)
     extractors_data = get_extractors_data(dst_dir)
@@ -130,14 +133,14 @@ def get_result(hash: str) -> T.Dict[str, T.Any]:
     }
 
 
-def del_result(hash: str) -> T.Dict[str, T.Any]:
+def del_result(hash: str) -> None:
     results_dir = get_results_dir()
     dst_dir = os.path.join(results_dir, hash)
     shutil.rmtree(dst_dir, ignore_errors=True)
     print(f"{dst_dir} deleted")
 
 
-def get_last_results() -> T.List[T.Any]:
+def get_last_results() -> list[Result]:
     last_results = []
     results_dir = get_results_dir()
     for result in os.listdir(results_dir):

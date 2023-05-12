@@ -5883,9 +5883,9 @@ def get_strings(
     ascii: bool = True,
     unicode: bool = True,
     offsets: bool = False,
-) -> T.List[T.Any]:
+) -> list[T.Any]:
     # Must include stack and tight strings at some point
-    strings_info = []
+    strings_info: list[T.Any] = []
     if not ascii and not unicode:
         return strings_info
 
@@ -5917,8 +5917,8 @@ def get_description(string: str) -> str:
 
 
 def get_blacklisted_strings(
-    filepath: str, blacklist: T.List[str]
-) -> T.List[str]:
+    filepath: str, blacklist: list[str]
+) -> list[tuple[int, str]]:
     strings = get_strings(filepath, ascii=True, unicode=True, offsets=True)
     return [
         (offset, s.decode())
@@ -5927,7 +5927,7 @@ def get_blacklisted_strings(
     ]
 
 
-def get_ipv4(filepath: str) -> int:
+def get_ipv4(filepath: str) -> set[str]:
     # May capture version strings (e.g. 1.0.0.0)
     strings = get_strings(filepath, ascii=True, unicode=True, offsets=False)
     # Will match ipv4 with optional :<port> suffix
@@ -5938,7 +5938,7 @@ def get_ipv4(filepath: str) -> int:
 
 
 @functools.lru_cache(maxsize=32)
-def get_domain_names(filepath: str) -> int:
+def get_domain_names(filepath: str) -> set[str]:
     strings = get_strings(filepath, ascii=True, unicode=True)
     # From https://gist.github.com/neu5ron/66078f804f16f9bda828
     # OR adapt https://regex101.com/r/FLA9Bv/9

@@ -23,5 +23,7 @@ if __name__ == "__main__":
         sys.argv[1],
     ]
     p = subprocess.Popen(arguments, stdout=subprocess.PIPE)
-    print(p.stdout.read().decode())
+    if p.stdout is not None:
+        print(p.stdout.read().decode())
+
     sys.exit(p.returncode)

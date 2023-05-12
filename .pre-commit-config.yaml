@@ -35,6 +35,7 @@ repos:
     -   id: isort
         args: ["--profile", "black", "--filter-files"]
 
+# pre-commit run --hook-stage manual mypy --all-files
 -   repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.1.1
     hooks:

@@ -9,12 +9,12 @@ import colorama
 
 
 def run_process(
-    args: T.List[str],
+    args: list[str],
     stdout: T.Union[T.BinaryIO, T.TextIO, int] = subprocess.PIPE,
     stderr: T.Union[T.BinaryIO, T.TextIO, int] = subprocess.PIPE,
-    write: T.Optional[str] = None,
+    write: str | None = None,
     **kwargs: T.Any,
-) -> T.Tuple[int, str, str]:
+) -> tuple[int, str, str]:
     start = time.perf_counter()
     p = subprocess.Popen(
         args,
@@ -57,11 +57,11 @@ def hexdump(data: bytes, offset: int = 0) -> str:
             if byte == step / 2:
                 hexline += " "
 
-            byte = hex(chunk[byte]).replace("0x", "")
-            if len(byte) == 1:
-                byte = "0" + byte
+            bytestr = hex(chunk[byte]).replace("0x", "")
+            if len(bytestr) == 1:
+                bytestr = "0" + bytestr
 
-            hexline += byte + " "
+            hexline += bytestr + " "
 
         hexline += (step * 3 - len(hexline) + 1) * " "
         asciiline = ""
@@ -79,7 +79,7 @@ def hexdump(data: bytes, offset: int = 0) -> str:
     return "\n".join(lines)
 
 
-def get_results_dir(hash: str = None) -> str:
+def get_results_dir(hash: str | None = None) -> str:
     results_dir = os.path.normpath(
         os.path.join(os.path.dirname(__file__), "results")
     )

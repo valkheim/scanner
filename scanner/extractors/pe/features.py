@@ -2,7 +2,6 @@
 
 import datetime
 import sys
-import typing as T
 
 import joblib
 import lief
@@ -30,7 +29,7 @@ from scanner.extractors.entropy.entropy import get_entropy
 from scanner.extractors.pe.debug import get_debug_infos
 
 
-def feature_amount_of_exports(filepath: str):
+def feature_amount_of_exports(filepath: str) -> int:
     return len(get_exports(filepath) or [])
 
 
@@ -72,13 +71,13 @@ def feature_has_valid_checksum(filepath: str) -> bool:
 def feature_has_zero_checksum(filepath: str) -> bool:
     hdr = get_header_infos(filepath)
     if "CheckSum" in hdr:
-        return hdr["CheckSum"] == 0
+        return bool(hdr["CheckSum"] == 0)
 
-    return 0
+    return False
 
 
 def feature_has_packer(filepath: str) -> bool:
-    return get_packers(filepath) != []
+    return bool(get_packers(filepath) != [])
 
 
 def feature_has_debug_infos(filepath: str) -> bool:
@@ -94,22 +93,22 @@ def feature_has_suspicious_entropy_shannon(filepath: str) -> bool:
     with open(filepath, "rb") as fh:
         data = fh.read()
 
-    return get_entropy(data, "shannon") >= 7.2
+    return bool(get_entropy(data, "shannon") >= 7.2)
 
 
 def feature_has_native_subsystem(filepath: str) -> bool:
     ss_id, _ = get_subsystem(filepath)
-    return ss_id == 1
+    return bool(ss_id == 1)
 
 
 def feature_has_gui_subsystem(filepath: str) -> bool:
     ss_id, _ = get_subsystem(filepath)
-    return ss_id == 2
+    return bool(ss_id == 2)
 
 
 def feature_has_cui_subsystem(filepath: str) -> bool:
     ss_id, _ = get_subsystem(filepath)
-    return ss_id == 3
+    return bool(ss_id == 3)
 
 
 def feature_has_suspicious_number_of_imports(filepath: str) -> bool:
@@ -156,9 +155,9 @@ def feature_has_suspicious_entrypoint_in_last_section(filepath: str) -> bool:
 
     entrypoint = header["AddressOfEntryPoint"]
     optional_header = get_optional_header(filepath)
-    _name, va, _rs, vs, char, _ent = sections[-1]
+    _name, va, _rs, vs, _char, _ent = sections[-1]
     start = optional_header.ImageBase + va
-    return start < entrypoint < start + vs
+    return bool(start < entrypoint < start + vs)
 
 
 def feature_suspicious_entrypoint_outside_of_file(filepath: str) -> bool:
@@ -186,7 +185,7 @@ def feature_has_suspicious_entrypoint_zero(filepath: str) -> bool:
         return False
 
     entrypoint = header["AddressOfEntryPoint"]
-    return entrypoint == 0
+    return bool(entrypoint == 0)
 
 
 def feature_has_suspicious_SizeOfImage(filepath: str) -> bool:
@@ -195,7 +194,7 @@ def feature_has_suspicious_SizeOfImage(filepath: str) -> bool:
         return False
 
     size = header["SizeOfImage"]
-    return size < 0x1000 or 0xA00000 < size
+    return bool(size < 0x1000) or bool(0xA00000 < size)
 
 
 def feature_has_suspicious_size_of_optional_hdr(filepath: str) -> bool:
@@ -217,7 +216,7 @@ def feature_has_suspicious_resources_size(filepath: str) -> bool:
     if not rsrc_directory.has_section:
         return False
 
-    return (
+    return bool(
         0.0
         <= rsrc_directory.section.size / pe.optional_header.sizeof_image
         <= 0.75
@@ -230,7 +229,7 @@ def feature_has_suspicious_size_of_initialized_data(
     if (pe := load_lief_pe(filepath)) is None:
         return False
 
-    return 0 < pe.optional_header.sizeof_initialized_data < 0x1927C0
+    return bool(0 < pe.optional_header.sizeof_initialized_data < 0x1927C0)
 
 
 def feature_has_suspicious_debug_timestamp(filepath: str) -> bool:
@@ -250,10 +249,10 @@ def feature_has_suspicious_debug_timestamp(filepath: str) -> bool:
 
 def feature_has_suspicious_section_many_shared_sections(filepath: str) -> bool:
     if (pe := load_lief_pe(filepath)) is None:
-        return 0
+        return False
 
-    # pe-studio allows a 0-1 range
-    return (
+    # pe-studio allows a 0-1 range²
+    return bool(
         sum(
             1
             for section in pe.sections
@@ -269,7 +268,7 @@ def feature_has_suspicious_section_first_is_writable(filepath: str) -> bool:
     if (pe := load_lief_pe(filepath)) is None:
         return False
 
-    return (
+    return bool(
         list(pe.sections)[0].has_characteristic(
             lief.PE.SECTION_CHARACTERISTICS.MEM_WRITE
         )
@@ -281,7 +280,7 @@ def feature_has_suspicious_section_last_is_executable(filepath: str) -> bool:
     if (pe := load_lief_pe(filepath)) is None:
         return False
 
-    return (
+    return bool(
         list(pe.sections)[0].has_characteristic(
             lief.PE.SECTION_CHARACTERISTICS.MEM_EXECUTE
         )
@@ -332,12 +331,12 @@ def feature_has_size_of_code_greater_than_size_of_code_sections(
         for section in pe.sections
         if section.has_characteristic(lief.PE.SECTION_CHARACTERISTICS.CNT_CODE)
     )
-    return pe.optional_header.sizeof_code > code_section_size
+    return bool(pe.optional_header.sizeof_code > code_section_size)
 
 
 def feature_amount_of_suspicious_section_characteristics(
     filepath: str,
-) -> bool:
+) -> int:
     if (pe := load_lief_pe(filepath)) is None:
         return 0
 
@@ -349,9 +348,9 @@ def feature_amount_of_suspicious_section_characteristics(
     )
 
 
-def _has_section_names(filepath: str, section_names: T.List[str]) -> bool:
+def _has_section_names(filepath: str, section_names: list[str]) -> bool:
     if (pe := load_lief_pe(filepath)) is None:
-        return 0
+        return False
 
     for section in pe.sections:
         if section.name in section_names:

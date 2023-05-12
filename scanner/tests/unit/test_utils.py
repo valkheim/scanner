@@ -7,7 +7,9 @@ from scanner import utils
 
 class TestUtils(unittest.TestCase):
     @unittest.mock.patch("os.makedirs")
-    def test_get_results_dir_without_hash(self, mock):
+    def test_get_results_dir_without_hash(
+        self, mock: unittest.mock.Mock
+    ) -> None:
         package_basedir = os.path.normpath(
             os.path.join(os.path.dirname(__file__), "..", "..")
         )
@@ -16,7 +18,7 @@ class TestUtils(unittest.TestCase):
         mock.assert_called_with(expected_dir, exist_ok=True)
 
     @unittest.mock.patch("os.makedirs")
-    def test_get_results_dir_with_hash(self, mock):
+    def test_get_results_dir_with_hash(self, mock: unittest.mock.Mock) -> None:
         package_basedir = os.path.normpath(
             os.path.join(os.path.dirname(__file__), "..", "..")
         )

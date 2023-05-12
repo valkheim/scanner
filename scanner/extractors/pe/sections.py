@@ -6,7 +6,7 @@ import sys
 from _pe import get_sections
 
 
-def read_c_string(f):
+def read_c_string(f: bytes) -> str:
     return "".join((map(chr, itertools.takewhile(lambda x: x, f))))
 
 

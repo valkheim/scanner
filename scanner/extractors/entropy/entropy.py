@@ -5,14 +5,12 @@ import sys
 from collections import Counter
 
 
-def get_entropy(data: bytes, unit: str):
+def get_entropy(data: bytes, unit: str) -> float:
     base = {"shannon": 2.0, "natural": math.exp(1), "hartley": 10.0}
-
     if len(data) <= 1:
         return 0
 
-    counts = Counter()
-
+    counts: Counter[int] = Counter()
     for d in data:
         counts[d] += 1
 

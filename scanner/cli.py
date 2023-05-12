@@ -14,7 +14,7 @@ from scanner.analyse import (
 
 def handle_file(filepath: str) -> int:
     if not os.path.isfile(filepath) or not lief.PE.is_pe(filepath):
-        return
+        return 1
 
     print(f"Handle {filepath}")
     with open(filepath, "rb") as fh:

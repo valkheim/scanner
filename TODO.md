@@ -10,3 +10,4 @@
 [ ] config
    [ ] extractor whitelist / blacklist?
    [ ] results folder location
+[ ] fix navigator.clipboard is undefined

@@ -5,10 +5,37 @@ const deleteButton = actionsArea.querySelector("#action-delete")
 const exportButton = actionsArea.querySelector("#action-export")
 const hash = document.querySelector("#infos-hash").innerText
 
+// https://stackoverflow.com/a/65996386
+async function copyToClipboard(textToCopy) {
+    // Navigator clipboard api needs a secure context (https)
+    if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(textToCopy);
+    } else {
+        // Use the 'out of viewport hidden text area' trick
+        const textArea = document.createElement("textarea");
+        textArea.value = textToCopy;
+
+        // Move textarea out of the viewport so it's not visible
+        textArea.style.position = "absolute";
+        textArea.style.left = "-999999px";
+
+        document.body.prepend(textArea);
+        textArea.select();
+
+        try {
+            document.execCommand('copy');
+        } catch (error) {
+            console.error(error);
+        } finally {
+            textArea.remove();
+        }
+    };
+}
+
 copyExtractorButtons.forEach(copyExtractorButton => {
     copyExtractorButton.addEventListener("click", (e) => {
         const nextTextareaContents = e.target.parentElement.parentElement.parentElement.parentElement.nextElementSibling.innerHTML
-        navigator.clipboard.writeText(nextTextareaContents)
+        copyToClipboard(nextTextareaContents)
     })
 })
 

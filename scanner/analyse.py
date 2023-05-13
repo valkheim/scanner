@@ -10,7 +10,12 @@ import time
 import typing as T
 
 from scanner.types import Infos, Result
-from scanner.utils import get_results_dir, run_process, yield_files
+from scanner.utils import (
+    get_extractors_dir,
+    get_results_dir,
+    run_process,
+    yield_files,
+)
 
 
 def read_result_infos(result_hash: str) -> Infos | None:
@@ -30,11 +35,19 @@ def write_result_infos(result_hash: str, data: Infos) -> None:
 
 
 def yield_extractor_paths(
-    dst_file: str, mkdir: bool = True
+    dst_file: str,
+    mkdir: bool = True,
+    extractor_abspaths_whitelist: list[str] | None = None,
 ) -> T.Generator[tuple[str, str], None, None]:
-    extractors_dir = os.path.join(os.path.dirname(__file__), "extractors")
+    extractors_dir = get_extractors_dir()
     for extractor_relpath in yield_files(extractors_dir):
         extractor_abspath = os.path.join(extractors_dir, extractor_relpath)
+        if (
+            extractor_abspaths_whitelist is not None
+            and extractor_abspath not in extractor_abspaths_whitelist
+        ):
+            continue
+
         parts = extractor_relpath.split(os.sep)
         if any([x.startswith("_") for x in parts]):
             continue
@@ -50,7 +63,9 @@ def yield_extractor_paths(
         yield extractor_abspath, results_absdir
 
 
-def run_extractors(hash: str) -> None:
+def run_extractors(
+    hash: str, extractor_abspaths_whitelist: list[str] | None = None
+) -> None:
     start = time.perf_counter()
     files = []
     args = []
@@ -59,7 +74,11 @@ def run_extractors(hash: str) -> None:
         return
 
     dst_file = os.path.join(dst_dir, infos["filename"])
-    for extractor_path, results_dir in yield_extractor_paths(dst_file):
+    for extractor_path, results_dir in yield_extractor_paths(
+        dst_file,
+        mkdir=True,
+        extractor_abspaths_whitelist=extractor_abspaths_whitelist,
+    ):
         files.append(open(os.path.join(results_dir, "stdout.log"), "wt"))
         files.append(open(os.path.join(results_dir, "stderr.log"), "wt"))
         args.append([[extractor_path, dst_file], files[-2], files[-1]])

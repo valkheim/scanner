@@ -1,3 +1,4 @@
+import glob
 import os
 import pathlib
 import subprocess
@@ -25,7 +26,6 @@ def run_process(
         **kwargs,
     )
     o, e = p.communicate(write)
-    # breakpoint()
     end = time.perf_counter()
     status = f"{colorama.Fore.RED}KO{colorama.Style.RESET_ALL}"
     if p.returncode == 0:
@@ -91,6 +91,10 @@ def get_results_dir(hash: str | None = None) -> str:
     return results_dir
 
 
+def get_extractors_dir() -> str:
+    return os.path.join(os.path.dirname(__file__), "extractors")
+
+
 def archive(hash: str, infos: T.Dict[str, T.Any]) -> str:
     results_dir = get_results_dir()
     timestamp = infos["last_update"].replace(" ", "_").replace(":", "-")
@@ -107,3 +111,14 @@ def archive(hash: str, infos: T.Dict[str, T.Any]) -> str:
             archive.write(filepath, filepath.relative_to(directory))
 
     return archive_path
+
+
+def resolve_extractor_path(result_relpath: str) -> str:
+    result_abspath = os.path.join(get_results_dir(), result_relpath)
+    prefix = os.sep.join(
+        [
+            "extractors" if x == "results" else x
+            for x in os.path.dirname(result_abspath).split(os.sep)
+        ]
+    )
+    return glob.glob(prefix + "*", recursive=False)[0]

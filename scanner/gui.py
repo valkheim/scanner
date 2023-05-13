@@ -10,7 +10,7 @@ from scanner.analyse import (
     read_result_infos,
     run_extractors,
 )
-from scanner.utils import archive
+from scanner.utils import archive, resolve_extractor_path
 
 gui = flask.Blueprint("gui", __name__, url_prefix="/")
 
@@ -29,7 +29,14 @@ def result(hash):
 
 @gui.route("/a/<hash>")
 def analyse(hash):
-    run_extractors(hash)
+    if (
+        extractor_result_path := flask.request.args.get("extractor")
+    ) is not None:
+        extractor_path = resolve_extractor_path(extractor_result_path)
+        run_extractors(hash, extractor_abspaths_whitelist=[extractor_path])
+    else:
+        run_extractors(hash)
+
     return flask.redirect(flask.url_for("gui.result", hash=hash))
 
 

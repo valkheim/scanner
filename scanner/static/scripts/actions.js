@@ -1,9 +1,18 @@
 const actionsArea = document.querySelector(".actions-area")
-const copyExtractorButtons = document.querySelector(".extractors").querySelectorAll(".action-copy")
-const rerunButton = actionsArea.querySelector("#action-rerun")
-const deleteButton = actionsArea.querySelector("#action-delete")
-const exportButton = actionsArea.querySelector("#action-export")
 const hash = document.querySelector("#infos-hash").innerText
+
+var ABC
+const repeatExtractorButtons = document.querySelector(".extractors").querySelectorAll(".action-repeat")
+repeatExtractorButtons.forEach(repeatExtractorButton => {
+    ABC = repeatExtractorButton
+    repeatExtractorButton.addEventListener("click", (e) => {
+        fetch("/a/" + hash + "?" + new URLSearchParams({
+            extractor: repeatExtractorButton.parentElement.parentElement.parentElement.children[0].innerHTML,
+        })).then(res => {
+            window.location.replace(res.url);
+        })
+    })
+})
 
 // https://stackoverflow.com/a/65996386
 async function copyToClipboard(textToCopy) {
@@ -32,6 +41,7 @@ async function copyToClipboard(textToCopy) {
     };
 }
 
+const copyExtractorButtons = document.querySelector(".extractors").querySelectorAll(".action-copy")
 copyExtractorButtons.forEach(copyExtractorButton => {
     copyExtractorButton.addEventListener("click", (e) => {
         const nextTextareaContents = e.target.parentElement.parentElement.parentElement.parentElement.nextElementSibling.innerHTML
@@ -39,18 +49,21 @@ copyExtractorButtons.forEach(copyExtractorButton => {
     })
 })
 
+const rerunButton = actionsArea.querySelector("#action-rerun")
 rerunButton.addEventListener('click', () => {
     fetch("/a/" + hash).then(res => {
         window.location.replace(res.url);
     })
 })
 
+const deleteButton = actionsArea.querySelector("#action-delete")
 deleteButton.addEventListener('click', () => {
     fetch("/d/" + hash).then(res => {
         window.location.replace(res.url);
     })
 })
 
+const exportButton = actionsArea.querySelector("#action-export")
 exportButton.onclick = () => {
     fetch("/x/" + hash)
         .then(async res => ({

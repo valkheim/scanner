@@ -25,3 +25,9 @@ class TestUtils(unittest.TestCase):
         expected_dir = os.path.join(package_basedir, "results", "hash")
         self.assertEqual(utils.get_results_dir("hash"), expected_dir)
         mock.assert_called_with(expected_dir, exist_ok=True)
+
+    def test_resolve_extractor_path(self) -> None:
+        path = utils.resolve_extractor_path("entropy/entropy/stdout.log")
+        self.assertTrue(
+            path.endswith(r"/scanner/extractors/entropy/entropy.py")
+        )

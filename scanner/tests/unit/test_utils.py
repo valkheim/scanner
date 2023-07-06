@@ -31,3 +31,10 @@ class TestUtils(unittest.TestCase):
         self.assertTrue(
             path.endswith(r"/scanner/extractors/entropy/entropy.py")
         )
+
+    def test_hexdump(self) -> None:
+        data = b"ABCDEF012345678\x00"
+        got = utils.hexdump(data)
+        expected = "0x000000: 41 42 43 44 45 46 30 31  32 33 34 35 36 37 38 00 |ABCDEF012345678.|"
+        self.assertIsNotNone(got)
+        self.assertEqual(got, expected)

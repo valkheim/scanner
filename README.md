@@ -14,6 +14,20 @@ This is a poetry-managed python project.
 [...]
 ```
 
+For an offline install, you must first prepare the required packages (`dist` folder) using the `/scripts/vendorize.sh` script
+and then run the following:
+
+```
+/downloads$ cd $(mktemp -d)
+/tmp/tmp.6X4MSgVWhF$ python3.8 -m venv ./.env
+/tmp/tmp.6X4MSgVWhF$ cp -r /downloads/dist/ .
+/tmp/tmp.6X4MSgVWhF$ . ./.env/bin/activate
+/tmp/tmp.6X4MSgVWhF$ pip install -r dist/requirements.txt --no-index --find-links dist/whl/
+/tmp/tmp.6X4MSgVWhF$ pip install -r dist/dev-requirements.txt --no-index --find-links dist/dev-whl/
+/tmp/tmp.6X4MSgVWhF$ pip install dist/scanner-0.2.1-py3-none-any.whl
+/tmp/tmp.6X4MSgVWhF$ python3.8 -m scanner gui
+```
+
 ## Test release
 
 ```

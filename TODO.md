@@ -11,3 +11,5 @@
    [ ] extractor whitelist / blacklist?
    [ ] results folder location
 [ ] fix navigator.clipboard is undefined
+[ ] detect rtti strings including offsets
+[ ] offline install (e.g. remove vt-py dependency)

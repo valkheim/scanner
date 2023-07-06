@@ -3,6 +3,7 @@
 # https://github.com/lief-project/LIEF/blob/master/examples/python/authenticode/authenticode_reader.py
 
 import sys
+import typing as T
 
 import lief
 
@@ -258,7 +259,7 @@ def print_all(sig: lief.PE.Signature, indent: int = 2) -> None:
                 print_attr(indent + 4, auth)
 
 
-def get_lief_binary(filepath: str) -> lief.PE.Binary | None:
+def get_lief_binary(filepath: str) -> T.Optional[lief.PE.Binary]:
     try:
         return lief.PE.parse(filepath)
 

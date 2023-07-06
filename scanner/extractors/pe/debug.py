@@ -12,7 +12,9 @@ from pdbparse.peinfo import (
 )
 
 
-def handle_xp_pe(debug_data: bytes) -> tuple[str | None, str | None]:
+def handle_xp_pe(
+    debug_data: bytes,
+) -> T.Tuple[T.Optional[str], T.Optional[str]]:
     # XP+
     if debug_data[:4] == b"RSDS":
         return get_rsds(debug_data)
@@ -23,7 +25,7 @@ def handle_xp_pe(debug_data: bytes) -> tuple[str | None, str | None]:
     return None, None
 
 
-def handle_win2k_pe(debug_data: bytes, pe_file: str) -> tuple[str, str]:
+def handle_win2k_pe(debug_data: bytes, pe_file: str) -> T.Tuple[str, str]:
     # Win2k
     # Get the .dbg file
     guid = get_pe_guid(pe_file)
@@ -45,7 +47,9 @@ def handle_win2k_pe(debug_data: bytes, pe_file: str) -> tuple[str, str]:
     return guid, filepath
 
 
-def get_debug_infos(filepath: str) -> tuple[str | None, str | None]:
+def get_debug_infos(
+    filepath: str,
+) -> T.Tuple[T.Optional[str], T.Optional[str]]:
     try:
         debug_data, debug_type = get_pe_debug_data(filepath)
 

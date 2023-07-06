@@ -49,6 +49,10 @@ def delete(hash):
 @gui.route("/x/<hash>")
 def export(hash):
     infos = read_result_infos(hash)
+    if not infos:
+        print("[-] no infos")
+        return flask.redirect(flask.url_for("gui.index"))
+
     archive_path = archive(hash, infos)
     return flask.send_file(archive_path)
 

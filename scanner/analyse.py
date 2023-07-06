@@ -18,7 +18,7 @@ from scanner.utils import (
 )
 
 
-def read_result_infos(result_hash: str) -> Infos | None:
+def read_result_infos(result_hash: str) -> T.Optional[Infos]:
     results_dir = get_results_dir()
     infos_path = os.path.join(results_dir, result_hash, "infos.json")
     if not os.path.exists(infos_path):
@@ -37,8 +37,8 @@ def write_result_infos(result_hash: str, data: Infos) -> None:
 def yield_extractor_paths(
     dst_file: str,
     mkdir: bool = True,
-    extractor_abspaths_whitelist: list[str] | None = None,
-) -> T.Generator[tuple[str, str], None, None]:
+    extractor_abspaths_whitelist: T.Optional[T.List[str]] = None,
+) -> T.Generator[T.Tuple[str, str], None, None]:
     extractors_dir = get_extractors_dir()
     for extractor_relpath in yield_files(extractors_dir):
         extractor_abspath = os.path.join(extractors_dir, extractor_relpath)
@@ -64,7 +64,7 @@ def yield_extractor_paths(
 
 
 def run_extractors(
-    hash: str, extractor_abspaths_whitelist: list[str] | None = None
+    hash: str, extractor_abspaths_whitelist: T.Optional[T.List[str]] = None
 ) -> None:
     start = time.perf_counter()
     files = []
@@ -159,7 +159,7 @@ def del_result(hash: str) -> None:
     print(f"{dst_dir} deleted")
 
 
-def get_last_results() -> list[Result]:
+def get_last_results() -> T.List[Result]:
     last_results = []
     results_dir = get_results_dir()
     for result in os.listdir(results_dir):

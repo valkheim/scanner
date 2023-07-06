@@ -10,12 +10,12 @@ import colorama
 
 
 def run_process(
-    args: list[str],
+    args: T.List[str],
     stdout: T.Union[T.BinaryIO, T.TextIO, int] = subprocess.PIPE,
     stderr: T.Union[T.BinaryIO, T.TextIO, int] = subprocess.PIPE,
-    write: str | None = None,
+    write: T.Optional[str] = None,
     **kwargs: T.Any,
-) -> tuple[int, str, str]:
+) -> T.Tuple[int, str, str]:
     start = time.perf_counter()
     p = subprocess.Popen(
         args,
@@ -79,7 +79,7 @@ def hexdump(data: bytes, offset: int = 0) -> str:
     return "\n".join(lines)
 
 
-def get_results_dir(hash: str | None = None) -> str:
+def get_results_dir(hash: T.Optional[str] = None) -> str:
     results_dir = os.path.normpath(
         os.path.join(os.path.dirname(__file__), "results")
     )

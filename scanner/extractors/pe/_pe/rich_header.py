@@ -6,6 +6,7 @@
 # also check the xml\rich-header.xml database of pe studio
 
 import os
+import typing as T
 
 KNOWN_PRODUCT_IDS = {
     0: "Unknown",
@@ -244,7 +245,7 @@ KNOWN_PRODUCT_IDS = {
 }
 
 
-def vs_version(product_id: int) -> str | None:
+def vs_version(product_id: int) -> T.Optional[str]:
     """https://raw.githubusercontent.com/dishather/richprint/master/comp_id.txt"""
     h = hex(product_id)[2:]
     h = "0" * (8 - len(h)) + h
@@ -259,7 +260,7 @@ def vs_version(product_id: int) -> str | None:
     return None
 
 
-def vs_version_fallback(i: int) -> str | None:
+def vs_version_fallback(i: int) -> T.Optional[str]:
     if i > len(KNOWN_PRODUCT_IDS) or i < 0:
         return None
     elif i in range(0x0106, 0x010A + 1):

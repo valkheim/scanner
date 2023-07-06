@@ -2,6 +2,7 @@
 
 import datetime
 import sys
+import typing as T
 
 import joblib
 import lief
@@ -348,7 +349,7 @@ def feature_amount_of_suspicious_section_characteristics(
     )
 
 
-def _has_section_names(filepath: str, section_names: list[str]) -> bool:
+def _has_section_names(filepath: str, section_names: T.List[str]) -> bool:
     if (pe := load_lief_pe(filepath)) is None:
         return False
 

@@ -2,6 +2,7 @@
 
 import math
 import sys
+import typing as T
 from collections import Counter
 
 
@@ -10,7 +11,7 @@ def get_entropy(data: bytes, unit: str) -> float:
     if len(data) <= 1:
         return 0
 
-    counts: Counter[int] = Counter()
+    counts: T.Counter[int] = Counter()
     for d in data:
         counts[d] += 1
 

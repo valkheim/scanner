@@ -7,7 +7,11 @@ import typing as T
 import lief
 import pefile
 from _pe.packers import PACKER_SECTIONS
-from _pe.rich_header import KNOWN_PRODUCT_IDS, vs_version, vs_version_fallback
+from _pe.rich_header import (
+    KNOWN_PRODUCT_IDS,
+    vs_version,
+    vs_version_fallback,
+)
 
 ANTIDEBUG_IMPORTS = {
     "kernel32.dll": {
@@ -4340,7 +4344,7 @@ USUSAL_SECTION_CHARACTERISTICS = {
 
 
 @functools.lru_cache(maxsize=32)
-def load_pefile_pe(filepath: str, retry: int = 10) -> pefile.PE | None:
+def load_pefile_pe(filepath: str, retry: int = 10) -> T.Optional[pefile.PE]:
     if retry <= 0:
         return None
 
@@ -4356,7 +4360,7 @@ def load_pefile_pe(filepath: str, retry: int = 10) -> pefile.PE | None:
 
 
 @functools.lru_cache(maxsize=32)
-def load_lief_pe(filepath: str) -> T.Any | None:
+def load_lief_pe(filepath: str) -> T.Optional[T.Any]:
     if not lief.PE.is_pe(filepath):
         return None
 
@@ -4364,7 +4368,7 @@ def load_lief_pe(filepath: str) -> T.Any | None:
 
 
 @functools.lru_cache(maxsize=32)
-def get_sections(filepath: str) -> list[T.Any] | None:
+def get_sections(filepath: str) -> T.Optional[T.List[T.Any]]:
     if (pe := load_pefile_pe(filepath)) is None:
         return None
 
@@ -4382,7 +4386,7 @@ def get_sections(filepath: str) -> list[T.Any] | None:
 
 
 @functools.lru_cache(maxsize=32)
-def get_packers(filepath: str) -> list[str] | None:
+def get_packers(filepath: str) -> T.Optional[T.List[str]]:
     if (sections := get_sections(filepath)) is None:
         return []
 
@@ -4398,7 +4402,7 @@ def get_packers(filepath: str) -> list[str] | None:
 
 
 @functools.lru_cache(maxsize=32)
-def get_imports(filepath: str) -> list[T.Any] | None:
+def get_imports(filepath: str) -> T.Optional[T.List[T.Any]]:
     if (pe := load_pefile_pe(filepath)) is None:
         return None
 
@@ -4416,7 +4420,7 @@ def get_imports(filepath: str) -> list[T.Any] | None:
 
 
 @functools.lru_cache(maxsize=32)
-def get_imports_hash(filepath: str) -> str | None:
+def get_imports_hash(filepath: str) -> T.Optional[str]:
     """
     https://www.mandiant.com/resources/blog/tracking-malware-import-hashing
     """
@@ -4433,7 +4437,7 @@ def get_imports_hash(filepath: str) -> str | None:
 
 
 @functools.lru_cache(maxsize=32)
-def get_exports(filepath: str) -> list[T.Any] | None:
+def get_exports(filepath: str) -> T.Optional[T.List[T.Any]]:
     if (pe := load_pefile_pe(filepath)) is None:
         return None
 
@@ -4449,7 +4453,7 @@ def get_exports(filepath: str) -> list[T.Any] | None:
     ]
 
 
-def get_stamps(filepath: str) -> T.Dict[str, int] | None:
+def get_stamps(filepath: str) -> T.Optional[T.Dict[str, int]]:
     if (pe := load_pefile_pe(filepath)) is None:
         return None
 
@@ -4485,7 +4489,7 @@ def get_stamps(filepath: str) -> T.Dict[str, int] | None:
 
 
 @functools.lru_cache(maxsize=32)
-def get_rich_header(filepath: str) -> list[T.Any] | None:
+def get_rich_header(filepath: str) -> T.Optional[T.List[T.Any]]:
     if (pe := load_pefile_pe(filepath)) is None:
         return None
 
@@ -4513,9 +4517,9 @@ def get_rich_header(filepath: str) -> list[T.Any] | None:
 def _resource(
     pe: pefile.PE,
     r: pefile.ResourceDirEntryData,
-    parents: list[pefile.ResourceDataEntryData] = [],
-    acc: list[T.Any] = [],
-) -> list[T.Any]:
+    parents: T.List[pefile.ResourceDataEntryData] = [],
+    acc: T.List[T.Any] = [],
+) -> T.List[T.Any]:
     if hasattr(r, "data"):
         return acc + [
             "-".join(parents + [str(r.id)]),
@@ -4536,7 +4540,7 @@ def _resource(
 
 
 @functools.lru_cache(maxsize=32)
-def get_resources(filepath: str) -> list[T.Any] | None:
+def get_resources(filepath: str) -> T.Optional[T.List[T.Any]]:
     if (pe := load_pefile_pe(filepath)) is None:
         return None
 
@@ -4552,7 +4556,7 @@ def get_resources(filepath: str) -> list[T.Any] | None:
 
 
 @functools.lru_cache(maxsize=32)
-def get_resources_section(filepath: str) -> pefile.ResourceDirData | None:
+def get_resources_section(filepath: str) -> T.Optional[pefile.ResourceDirData]:
     if (pe := load_pefile_pe(filepath)) is None:
         return None
 
@@ -4566,7 +4570,7 @@ def get_resources_section(filepath: str) -> pefile.ResourceDirData | None:
 
 
 @functools.lru_cache(maxsize=32)
-def get_optional_header(filepath: str) -> pefile.Structure | None:
+def get_optional_header(filepath: str) -> T.Optional[pefile.Structure]:
     if (pe := load_pefile_pe(filepath)) is None:
         return None
 
@@ -4590,7 +4594,7 @@ def get_size_of_optional_header(filepath: str) -> int:
 
 
 @functools.lru_cache(maxsize=32)
-def get_header_infos(filepath: str) -> dict[str, int] | None:
+def get_header_infos(filepath: str) -> T.Optional[T.Dict[str, int]]:
     if (pe := load_pefile_pe(filepath)) is None:
         return None
 
@@ -4621,7 +4625,9 @@ def get_header_infos(filepath: str) -> dict[str, int] | None:
 
 
 @functools.lru_cache(maxsize=32)
-def get_subsystem(filepath: str) -> tuple[T.Any | None, T.Any | None]:
+def get_subsystem(
+    filepath: str,
+) -> T.Tuple[T.Optional[T.Any], T.Optional[T.Any]]:
     if (pe := load_pefile_pe(filepath)) is None:
         return None, None
 
@@ -4646,8 +4652,8 @@ def has_valid_checksum(filepath: str) -> bool:
 
 
 def in_imports_list(
-    filepath: str, watchdir: dict[str, list[str]]
-) -> list[tuple[str, str]] | None:
+    filepath: str, watchdir: T.Dict[str, T.List[str]]
+) -> T.Optional[T.List[T.Tuple[str, str]]]:
     if (imports := get_imports(filepath)) is None:
         return None
 

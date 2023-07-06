@@ -55,16 +55,16 @@ class TestAnalyse(unittest.TestCase):
             "f2cd2b349341094854c5806f617a746dd50a74eb"
         )
         extractors_data = analyse.get_extractors_data(some_golden_dir)
-        excepted = [
-            r"entropy/entropy/stdout.log",
-            r"strings/unicode/stdout.log",
-            r"strings/suspicious_strings/stdout.log",
-            r"strings/ascii/stdout.log",
+        expected = [
             r"checksums/checksums/stdout.log",
+            r"entropy/entropy/stdout.log",
             r"identification/file/stdout.log",
+            r"strings/ascii/stdout.log",
+            r"strings/suspicious_strings/stdout.log",
+            r"strings/unicode/stdout.log",
         ]
-        got = list(extractors_data.keys())
-        self.assertListEqual(got, excepted)
+        got = sorted(list(extractors_data.keys()))
+        self.assertListEqual(got, expected)
         self.assertTrue(
             r"pe-Windows-x86-cmd: PE32 executable (console) Intel 80386, for MS Windows, 4 sections"
             in extractors_data["identification/file/stdout.log"]

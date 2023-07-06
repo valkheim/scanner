@@ -1,11 +1,12 @@
 import argparse
 import sys
+import typing as T
 
 import scanner.cli
 import scanner.gui
 
 
-def get_arguments() -> tuple[argparse.ArgumentParser, argparse.Namespace]:
+def get_arguments() -> T.Tuple[argparse.ArgumentParser, argparse.Namespace]:
     """Parse CLI options"""
     parser = argparse.ArgumentParser()
     subs = parser.add_subparsers()
@@ -31,7 +32,7 @@ def get_arguments() -> tuple[argparse.ArgumentParser, argparse.Namespace]:
     return parser, parser.parse_args()
 
 
-def main() -> int:
+def main() -> T.Any:
     parser, args = get_arguments()
     if not hasattr(args, "run"):
         parser.print_help()

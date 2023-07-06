@@ -57,7 +57,7 @@ tbody {
 
 textarea {
     min-height: 2rem;
-    height: 8rem;
+    height: 12rem;
     width: 100%;
     resize: vertical;
     font-family: monospace;

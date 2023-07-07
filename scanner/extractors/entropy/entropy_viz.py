@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
-# import math
+import math
+import os
 import sys
 
 from _entropy import get_entropy
-
-# from PIL import Image
+from PIL import Image
 
 
 def yield_chunk_entropy(data: bytes, size: int, unit: str):
@@ -38,9 +38,9 @@ if __name__ == "__main__":
         chunks_entropy[idx] = round((val - vmin) / (vmax - vmin) * 0xFF)
 
     # Prepare image from bytes
-    # sq = int(math.sqrt(len(chunks_entropy)))
-    # im = Image.frombytes("L", (sq, sq), bytes(chunks_entropy))
+    sq = int(math.sqrt(len(chunks_entropy)))
+    im = Image.frombytes("L", (sq, sq), bytes(chunks_entropy))
     # im.show()
-    # im.save("entropy.png")
-
-    print(chunks_entropy)
+    path = os.path.join(sys.argv[2], "entropy.png")
+    im.save(path)
+    print(f"entropy visualization saved to {path}")

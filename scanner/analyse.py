@@ -81,7 +81,9 @@ def run_extractors(
     ):
         files.append(open(os.path.join(results_dir, "stdout.log"), "wt"))
         files.append(open(os.path.join(results_dir, "stderr.log"), "wt"))
-        args.append([[extractor_path, dst_file], files[-2], files[-1]])
+        args.append(
+            [[extractor_path, dst_file, results_dir], files[-2], files[-1]]
+        )
 
     with multiprocessing.dummy.Pool(
         multiprocessing.cpu_count() - 1 or 1

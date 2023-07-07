@@ -22,6 +22,7 @@ class TestAnalyse(unittest.TestCase):
             r"/capa/flare_capa.py",
             r"/checksums/checksums.sh",
             r"/entropy/entropy.py",
+            r"/entropy/entropy_viz.py",
             r"/identification/file.sh",
             r"/pe/authenticode.py",
             r"/pe/debug.py",

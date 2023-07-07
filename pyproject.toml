@@ -22,6 +22,7 @@ flare-capa = "^5.0.0"
 setuptools = "^67.6.1"
 joblib = "^1.2.0"
 vt-py = "^0.17.5"
+pillow = "^10.0.0"
 
 [tool.poetry.dev-dependencies]
 types-Flask = "^1.1.6"

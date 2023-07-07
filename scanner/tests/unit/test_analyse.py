@@ -69,3 +69,11 @@ class TestAnalyse(unittest.TestCase):
             r"pe-Windows-x86-cmd: PE32 executable (console) Intel 80386, for MS Windows, 4 sections"
             in extractors_data["identification/file/stdout.log"]
         )
+
+    @unittest.mock.patch("scanner.analyse.get_results_dir")
+    def test_get_result(self, mock: unittest.mock.Mock) -> None:
+        mock.return_value = utils.get_golden_results_dir()
+        infos = analyse.get_result(r"f2cd2b349341094854c5806f617a746dd50a74eb")
+        self.assertIsNotNone(infos)
+        self.assertEqual(sorted(infos.keys()), ["extractors", "infos"])
+        self.assertEqual(infos["infos"]["filename"], "pe-Windows-x86-cmd")

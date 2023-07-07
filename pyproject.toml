@@ -29,6 +29,10 @@ types-Flask = "^1.1.6"
 coverage = "^6.4.1"
 mypy = "^0.971"
 
+[tool.poetry.group.dev.dependencies]
+pip = "^23.1.2"
+pre-commit = "^3.3.3"
+
 [tool.mypy]
 ignore_missing_imports = true
 

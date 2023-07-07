@@ -1,4 +1,5 @@
 import os
+import tempfile
 import unittest
 import unittest.mock
 
@@ -38,3 +39,19 @@ class TestUtils(unittest.TestCase):
         expected = "0x000000: 41 42 43 44 45 46 30 31  32 33 34 35 36 37 38 00 |ABCDEF012345678.|"
         self.assertIsNotNone(got)
         self.assertEqual(got, expected)
+
+    @unittest.mock.patch("scanner.utils.zipfile.ZipFile")
+    @unittest.mock.patch("scanner.utils.get_results_dir")
+    def test_archive(self, get_results_dir, zipfile) -> None:
+        with tempfile.TemporaryDirectory() as tmpd:
+            get_results_dir.return_value = tmpd
+            expected_archive_path = os.path.join(
+                tmpd, "scanner-hash-timestamp.zip"
+            )
+            got_archive_path = utils.archive(
+                "hash", {"last_update": "timestamp"}
+            )
+            self.assertEqual(got_archive_path, expected_archive_path)
+            zipfile.assert_called_once_with(
+                expected_archive_path, "w", compression=12, compresslevel=9
+            )

@@ -26,7 +26,7 @@ from _pe import (  # noqa
     load_lief_pe,
 )
 
-from scanner.extractors.entropy.entropy import get_entropy
+from scanner.extractors.entropy._entropy import get_entropy
 from scanner.extractors.pe.debug import get_debug_infos
 
 

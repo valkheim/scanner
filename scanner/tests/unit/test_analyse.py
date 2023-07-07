@@ -20,9 +20,9 @@ class TestAnalyse(unittest.TestCase):
         got = sorted(suffixes)
         expected = [
             r"/capa/flare_capa.py",
-            r"/checksums/checksums.sh",
             r"/entropy/entropy.py",
             r"/entropy/entropy_viz.py",
+            r"/hashes/hashes.py",
             r"/identification/file.sh",
             r"/pe/authenticode.py",
             r"/pe/debug.py",
@@ -30,7 +30,6 @@ class TestAnalyse(unittest.TestCase):
             r"/pe/features.py",
             r"/pe/header.py",
             r"/pe/imports.py",
-            r"/pe/imports_hash.py",
             r"/pe/packers.py",
             r"/pe/resources.py",
             r"/pe/rich_header.py",

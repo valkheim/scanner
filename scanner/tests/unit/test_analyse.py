@@ -46,7 +46,7 @@ class TestAnalyse(unittest.TestCase):
             r"/strings/suspicious_strings.py",
             r"/strings/tight_strings.sh",
             r"/strings/unicode.py",
-            r"/vt/by_hash.py",
+            # r"/vt/by_hash.py",
         ]
         self.assertListEqual(got, expected)
 

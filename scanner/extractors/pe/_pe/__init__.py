@@ -4392,7 +4392,7 @@ def get_packers(filepath: str) -> T.Optional[T.List[str]]:
         return []
 
     candidates = []
-    for name, _va, _rs, _vs, _char, _ent in sections:
+    for name, _va, _rs, _vs, _char, _ent, _md5 in sections:
         section_name = "".join(
             (map(chr, itertools.takewhile(lambda x: x, name)))
         )

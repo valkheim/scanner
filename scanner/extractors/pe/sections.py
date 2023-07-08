@@ -71,9 +71,9 @@ if __name__ == "__main__":
         sys.exit(1)
 
     print(
-        "name,virtual_address,raw_size,virtual_size,characteristics,characteristics_ex,entropy"
+        "name,virtual_address,raw_size,virtual_size,characteristics,characteristics_ex,entropy,md5"
     )
-    for name, va, rs, vs, char, ent in sections:
+    for name, va, rs, vs, char, ent, md5 in sections:
         line = [
             read_c_string(name),
             f"{va:#0x}",
@@ -82,6 +82,7 @@ if __name__ == "__main__":
             f"{char:#0x}",
             decode_characteristics(char),
             f"{ent}",
+            f"{md5}",
         ]
         print(",".join(line))
 

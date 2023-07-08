@@ -4380,6 +4380,7 @@ def get_sections(filepath: str) -> T.Optional[T.List[T.Any]]:
             section.Misc_VirtualSize,
             section.Characteristics,
             section.get_entropy(),
+            section.get_hash_md5(),
         )
         for section in pe.sections
     ]

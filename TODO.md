@@ -28,3 +28,6 @@
 [ ] detect libraries
   * unique library strings
   * library third party imports (like openssl with ws32.dll and maybe psa cryptos)
+[ ] install / update extractors procedure ?
+   - install: e.g decrypt data during installation
+   - update: update list like comp_id.txt

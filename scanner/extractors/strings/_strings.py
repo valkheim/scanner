@@ -6268,6 +6268,16 @@ SUSPICIOUS_REGISTRY = [
     r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows",
     r"SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Run"
     r"SOFTWARE\Microsoft\Windows\CurrentVersion\Run",
+    r"iexplorer.exe",
+    r"firefox.exe",
+    r"key3.db",  # browser db
+    r"signons.sqlite"  # browser db
+    r"System32\drivers\etc\hosts",  # windows hosts file location
+    r"backdoor",
+    r"virus",
+    r"exploit",
+    r"hack",
+    r"CWSandbox",  # some Zeus/Citadel samples
 ]
 SUSPICIOUS_SANDBOX_PIDS = [
     "00426-293-8170032-85146",

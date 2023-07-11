@@ -18,3 +18,10 @@ echo "== Vendorize dev-dependencies"
 
 poetry export -f requirements.txt --output dist/dev-requirements.txt --only dev
 poetry run pip download -r dist/dev-requirements.txt -d dist/dev-whl --no-cache-dir
+
+echo "== Creating tarball"
+
+version=$(grep version < pyproject.toml | head -n 1 | cut -d '"' -f2)
+name=scanner-$version.tar.gz
+rm -f "$name"
+tar czf "$name" dist

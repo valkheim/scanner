@@ -6,6 +6,7 @@ from _pe import (  # noqa
     ANTIDEBUG_IMPORTS,
     KEYBOARD_IMPORTS,
     SUSPICIOUS_IMPORTS,
+    UNPACKING_IMPORTS,
     in_imports_list,
 )
 
@@ -14,6 +15,7 @@ if __name__ == "__main__":
         (SUSPICIOUS_IMPORTS, "generic"),
         (ANTIDEBUG_IMPORTS, "antidebug"),
         (KEYBOARD_IMPORTS, "keyboard"),
+        (UNPACKING_IMPORTS, "unpacking"),
     ]
     suspicious_imports_infos = []
     for type, label in types:

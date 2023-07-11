@@ -13,6 +13,39 @@ from _pe.rich_header import (
     vs_version_fallback,
 )
 
+UNPACKING_IMPORTS = {
+    "kernelbase.dll": {
+        "CreateProcessInternalW",
+    },
+    "kernel32.dll": {
+        "CreateProcessInternalW",
+        "VirtualAlloc",
+        "VirtualAllocEx",
+        "VirtualProtect",
+        "ZwProtectVirtualMemory",
+        "WriteProcessMemory",
+        "ResumeThread",
+    },
+    "ntdll.dll": {
+        "NtWriteProcessMemory",
+        "NtResumeThread",
+        "NtMapViewOfSection",
+        "NtUnmapViewOfSection",
+        "NtWriteVirtualMemory",
+        "NtReadVirtualMemory",
+    },
+    "advapi32.dll": {
+        "CryptDecrypt",
+    },
+    "ntoskrnl.exe": {
+        "RtlDecompressBuffer",
+        "NtCreateSection",  # with MapViewOfSection
+        "MapViewOfSection",  # with NtCreateSection
+        "ZwMapViewOfSection",  # with NtCreateSection
+        "ZwUnmapViewOfSection",
+    },
+}
+
 # BeingDebugged, PRocessHeap, NtGlobalFlag PEB flags
 ANTIDEBUG_IMPORTS = {
     "user32.dll": {

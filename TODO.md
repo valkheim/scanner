@@ -15,5 +15,13 @@
    * like unpacking, injections, etc
    * and / or imports combinations
    * yara?
+     - https://yara.readthedocs.io/en/v3.8.1/writingrules.html
+     - https://github.com/xme/yara-rules/blob/main/suspicious-api-calls.yara
+     - more capa rules https://github.com/mandiant/capa-rules/tree/ec223d1a1468f1d18887191ddb2e28e0a4a8e8d2
+     - https://github.com/Yara-Rules/rules
    * https://fareedfauzi.github.io/2022/08/08/Malware-analysis-cheatsheet.html#winapi-process-injection-list
    * crawl c2 agents / blogs / github and extract api list
+[ ] embeeded resources
+  * binwalk
+  * foremost
+  * yara forensics https://github.com/Xumeiquer/yara-forensics/tree/a3d03742e054b71298f800793a1faada30bf2601

@@ -13,7 +13,11 @@ from _pe.rich_header import (
     vs_version_fallback,
 )
 
+# BeingDebugged, PRocessHeap, NtGlobalFlag PEB flags
 ANTIDEBUG_IMPORTS = {
+    "user32.dll": {
+        "BlockInput",
+    },
     "kernel32.dll": {
         "IsDebuggerPresent",
         "RegisterApplicationRestart",
@@ -61,6 +65,7 @@ ANTIDEBUG_IMPORTS = {
         "EtwGetTraceEnableFlags",
         "EtwTraceMessage",
         "NtGetContextThread",
+        "NtQueryInformationProcess",
         "WerReportSQMEvent",
         "WerRegisterMemoryBlock",
         "WerUnregisterMemoryBlock",
@@ -89,6 +94,9 @@ ANTIDEBUG_IMPORTS = {
         "ReportEvent",
         "SaferRecordEventLogEntry",
         "StartTrace",
+        "LookupPrivilegeValue",  # with SeDebugPrivilege argument
+        "LookupPrivilegeValueA",
+        "LookupPrivilegeValueW",
         "CloseTrace",
         "ProcessTrace",
         "FlushTrace",

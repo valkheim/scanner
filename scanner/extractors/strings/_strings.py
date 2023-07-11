@@ -4943,6 +4943,12 @@ SUSPICIOUS_GUID = [
     "f935dc22-1cf0-11d0-adb9-00c04fd58a0b",  # Windows Script Host Shell Object
     "f959dbbb-3867-41f2-8e5f-3b8befaa81b3",  # UmOutlookAddin.FormRegionAddin (potential exploit document CVE-2016-0042 / MS16-014) LSID:UmOutlookAddin.FormRegionAddin (potential exploit document CVE-2016-0042 / MS16-014) CLSID
     "8e5e2654-ad2d-48bf-ac2d-d17f00898d06",  # Avast
+    "e30629d1-27e5-11ce-875d-00608cb78066",  # Audio Renderer (CLSID_AudioRender)
+    "37e92a92-d9aa-11d2-bf84-8ef2b1555aed",  # Audio Renderer Advanced Properties
+    "e0f158e1-cb04-11d0-bd4e-00a0c911ce86",  # HKCU\Software\Microsoft\ActiveMovie\devenum (CLSID_AudioRendererCategory)
+    "e436ebb3-524f-11ce-9f53-0020af0ba770",  # Filter Graph (CLSID_FilterGraph)
+    "e436ebb8-524f-11ce-9f53-0020af0ba770",  # Filter Graph no thread
+    "a3ecbc41-581a-4476-b693-a63340462d8b",  # Filter Graph Private Thread
 ]
 SUSPICIOUS_SIDS = [
     "S-1-0",
@@ -6336,7 +6342,7 @@ SUSPICIOUS_SDDL = [
     "O:BAG:BAD:(A;;0x7;;;PS)(A;;0x3;;;SY)(A;;0x7;;;BA)",
     "WD:(A;;GA;;;WD)",
 ]
-STRING_DESCRIPTIONS = {  # Do'nt use commas, it can break csv outputs
+STRING_DESCRIPTIONS = {  # Don't use commas, it can break csv outputs
     r"!This program cannot be run in DOS mode.": "string in dos stub",
     r"CMD.EXE": "can be used to start cmd.exe",
 }

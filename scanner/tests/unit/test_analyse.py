@@ -19,6 +19,7 @@ class TestAnalyse(unittest.TestCase):
         ]
         got = sorted(suffixes)
         expected = [
+            r"/capa/capa_ex_injection.py",
             r"/capa/flare_capa.py",
             r"/entropy/entropy.py",
             r"/entropy/entropy_viz.py",

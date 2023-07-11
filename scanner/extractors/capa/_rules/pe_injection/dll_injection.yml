@@ -1,0 +1,15 @@
+rule:
+  meta:
+    name: very basic dll injection
+    authors:
+      - user
+    scope: file
+  features:
+    - and:
+      - import: VirtualAllocEx
+      - import: WriteProcessMemory
+      - and:
+        - import: GetProcAddress
+        - import: GetModuleHandleA
+        - string: "LoadLibraryA"
+      - import: CreateRemoteThread

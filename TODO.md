@@ -25,3 +25,6 @@
   * binwalk
   * foremost
   * yara forensics https://github.com/Xumeiquer/yara-forensics/tree/a3d03742e054b71298f800793a1faada30bf2601
+[ ] detect libraries
+  * unique library strings
+  * library third party imports (like openssl with ws32.dll and maybe psa cryptos)

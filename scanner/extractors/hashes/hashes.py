@@ -16,6 +16,7 @@ from _pe import get_imports_hash
 def get_ssdeep_hash(path: str) -> str:
     """
     https://ssdeep-project.github.io/ssdeep/
+    https://blueteamresources.in/ssdeep-hash/
     """
     ssdeep_path = os.path.join(os.path.dirname(__file__), "_ssdeep", "ssdeep")
     cmd = f"{ssdeep_path} -c {path}"
@@ -26,6 +27,9 @@ def get_ssdeep_hash(path: str) -> str:
 def get_tlsh_hash(path: str) -> str:
     """
     https://tlsh.org/
+    https://pypi.org/project/py-tlsh/
+    https://github.com/trendmicro/tlsh/blob/master/TLSH_Introduction.pdf
+    https://github.com/trendmicro/tlsh/blob/master/TLSH_CTC_final.pdf
     """
     return tlsh.hash(open(path, "rb").read())
 

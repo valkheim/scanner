@@ -4,9 +4,9 @@ import subprocess
 import sys
 
 if __name__ == "__main__":
-    # https://github.com/mandiant/capa-rules
+    # https://github.com/mandiant/capa-rules/tags
     rules_path = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "_rules", "capa-rules-5.0.0")
+        os.path.join(os.path.dirname(__file__), "_rules", "capa-rules-7.0.1")
     )
     # https://github.com/mandiant/capa/tree/master/sigs
     sigs_path = os.path.abspath(

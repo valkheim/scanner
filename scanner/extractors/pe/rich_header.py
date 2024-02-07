@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 
+"""
+One can prevent Microsoft to tools from emitting this Rich header using the
+following undocumented linker option: /emittoolversioninfo:no
+"""
+
 import sys
 
 from _pe import get_rich_header

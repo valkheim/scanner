@@ -32,3 +32,8 @@
 [ ] install / update extractors procedure ?
    - install: e.g decrypt data during installation
    - update: update list like comp_id.txt
+[ ] show images in results
+  * remove stdout / stderr mechanisme
+  * must output some output.json with typed ressources to display
+  * or stdout.png?
+  * reorganiser l'extractors_data non pas en subpath de resource mais en subpath d'extractor pour y get un map de .log et un map de .png

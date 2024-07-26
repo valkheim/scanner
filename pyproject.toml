@@ -16,14 +16,15 @@ Flask = "^2.2.2"
 # extractors dependencies
 pefile = "^2023.2.7"
 pdbparse = "^1.5"
-lief = "^0.12.3"
-colorama = "0.4.6"
+lief = "0.15.1"
+colorama = "^0.4.6"
 flare-capa = "^7.0.0"
 setuptools = "^67.6.1"
 joblib = "^1.2.0"
 vt-py = "^0.17.5"
 pillow = "^10.0.0"
 py-tlsh = "^4.7.2"
+binwalk = "^2.1.0"
 
 [tool.poetry.dev-dependencies]
 types-Flask = "^1.1.6"

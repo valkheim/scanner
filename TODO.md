@@ -23,7 +23,7 @@
    * https://fareedfauzi.github.io/2022/08/08/Malware-analysis-cheatsheet.html#winapi-process-injection-list
    * crawl c2 agents / blogs / github and extract api list
 [ ] embeeded resources
-  * binwalk
+  * binwalk (not with the pypi package as it does not install well the binwalk.core module) -> https://github.com/ReFirmLabs/binwalk/issues/352
   * foremost
   * yara forensics https://github.com/Xumeiquer/yara-forensics/tree/a3d03742e054b71298f800793a1faada30bf2601
 [ ] detect libraries
@@ -37,3 +37,4 @@
   * must output some output.json with typed ressources to display
   * or stdout.png?
   * reorganiser l'extractors_data non pas en subpath de resource mais en subpath d'extractor pour y get un map de .log et un map de .png
+[ ] Online, test file in http://files.ninja
